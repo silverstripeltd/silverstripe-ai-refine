@@ -1,0 +1,21 @@
+---
+Name: ai-brand-voice
+---
+SilverStripe\CMS\Model\SiteTree:
+  extensions:
+    - SilverstripeLtd\AiBrandVoice\Extensions\BrandVoiceSiteTreeExtension
+
+SilverStripe\SiteConfig\SiteConfig:
+  extensions:
+    - SilverstripeLtd\AiBrandVoice\Extensions\BrandVoiceSiteConfigExtension
+
+SilverStripe\Control\Director:
+  rules:
+    'admin/ai-brand-voice': SilverstripeLtd\AiBrandVoice\Controllers\BrandVoiceController
+
+SilverStripe\Admin\LeftAndMain:
+  extra_requirements_javascript:
+    'silverstripeltd/ai-brand-voice:client/dist/js/bundle.js':
+      defer: true
+  extra_requirements_css:
+    - 'silverstripeltd/ai-brand-voice:client/dist/styles/bundle.css'
