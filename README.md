@@ -69,7 +69,7 @@ AI_BRAND_VOICE_API_KEY=your-api-key         # API key for the chosen provider
 Control which model is used and how it generates responses. All optional - sensible defaults are used if omitted.
 
 ```bash
-AI_BRAND_VOICE_MODEL=gemini-3.1-flash-lite-preview  # Model identifier (provider-specific)
+AI_BRAND_VOICE_MODEL=gemini-3.1-flash-lite  # Model identifier (provider-specific)
 AI_BRAND_VOICE_THINKING_LEVEL=low           # Thinking effort: none, low, medium, or high
 AI_BRAND_VOICE_TEMPERATURE=0.0              # Sampling temperature (0.0–1.0)
 AI_BRAND_VOICE_MAX_TOKENS=20000             # Max tokens in AI response

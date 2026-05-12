@@ -114,6 +114,6 @@ class GeminiProvider extends AbstractAIProvider
      */
     protected function getDefaultModel(): string
     {
-        return 'gemini-3.1-flash-lite-preview';
+        return 'gemini-3.1-flash-lite';
     }
 }
