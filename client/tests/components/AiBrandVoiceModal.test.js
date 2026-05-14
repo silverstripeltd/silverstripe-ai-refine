@@ -145,8 +145,8 @@ test('disables check and apply while the edit form is dirty', async () => {
 
   expect(screen.queryByText(/save the page to draft before checking if you have unsaved changes/i)).not.toBeNull();
   expect(screen.getByRole('button', { name: 'Re-check Brand Voice' }).disabled).toBe(true);
-  expect(screen.getByRole('button', { name: 'Apply suggestions' }).disabled).toBe(true);
-  expect(screen.getByRole('checkbox', { name: 'Apply Page title' }).disabled).toBe(true);
+  expect(screen.queryByRole('button', { name: 'Apply suggestions' })).toBeNull();
+  expect(screen.queryByRole('checkbox', { name: 'Apply Page title' })).toBeNull();
 });
 
 test('checks content, renders per-suggestion review cards, and applies selected suggestions', async () => {

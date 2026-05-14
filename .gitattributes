@@ -1,0 +1,24 @@
+# AI tool guidance
+CLAUDE.md export-ignore
+
+# Tests
+tests/ export-ignore
+client/src/ export-ignore
+
+# Internal documentation and specs
+specs/ export-ignore
+
+# Frontend build and test tooling
+package.json export-ignore
+yarn.lock export-ignore
+webpack.config.js export-ignore
+babel.config.js export-ignore
+jest.config.js export-ignore
+.eslintrc.js export-ignore
+.eslintignore export-ignore
+.stylelintrc.js export-ignore
+.nvmrc export-ignore
+
+# PHP development tooling
+phpunit.xml export-ignore
+phpcs.xml export-ignore

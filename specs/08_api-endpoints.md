@@ -154,6 +154,8 @@ The `check` and `apply` endpoints require a valid CSRF token, which is standard 
 
 The modal uses Silverstripe's FormSchema mechanism to define its layout server-side. This keeps the React component thin, and the returned schema meta also carries the action URLs, labels, and messaging for the review and apply flow.
 
+This module intentionally uses FormSchema only for schema meta, not as a full record-editing form. The modal reviews content owned by other modules and writes selected suggestions back to Draft page or Elemental records via separate JSON `check` and `apply` endpoints, so a full FormSchema form is not the right fit here.
+
 ## No GET endpoint
 
 There is no GET endpoint to fetch previous results. On-demand results are cached on the Entwine instance rather than persisted to DB. The modal does not need to load stored data from the server on open, and the apply flow always revalidates against fresh Draft rewrite targets on the server before writing.

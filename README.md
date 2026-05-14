@@ -91,3 +91,48 @@ AI_BRAND_VOICE_JOB_REQUEUE_DELAY=28800      # Seconds before scheduling next run
 ```
 
 The rate limit delay is measured from the **start** of each API request, not from when it finishes. If a request takes longer than the delay, the next request starts immediately with no extra wait.
+
+## Usage
+
+### SiteConfig dependency
+
+Brand Voice depends on `SiteConfig.BrandVoiceDefinition`. Editors configure this in **Settings > Brand Voice**, and both the background job and the on-demand modal use that same definition as the source of truth.
+
+If the definition is empty:
+
+- the background job skips all pages
+- the CMS report shows a setup banner instead of compliance data
+- the toolbar button still opens the modal so editors see the missing-configuration guidance instead of a silently missing action
+
+### On-demand workflow
+
+The on-demand workflow is a review-and-apply modal aimed at CMS editors working on a specific page:
+
+1. Open the page in the CMS and click **Brand Voice** in the preview toolbar.
+2. Click **Check Brand Voice** to evaluate the page's saved Draft content against the configured brand voice.
+3. Review the returned rating, reasoning summary, and per-target diff cards.
+4. Select only the suggestions you want to accept.
+5. Click **Apply suggestions** to write those changes back to Draft content.
+
+The modal does not edit suggestion text inline and does not persist on-demand results to `BrandVoiceAnalysis`. Instead, it acts as a focused review surface for applying selected rewrites to the current page draft.
+
+### Draft and Live behaviour
+
+This module intentionally uses Draft and Live differently depending on the workflow:
+
+- **Background analysis and report data** are based on published **Live** content. The background job skips draft-only pages and stores ratings for the public version of the site.
+- **The on-demand modal** reads saved **Draft** content so editors can review and improve unpublished changes before publishing.
+- **Apply** writes selected suggestions back to **Draft** only. It never publishes content.
+- **The CMS report** still compares the saved analysis to the page's current CMS content hash, so unpublished draft edits can mark a page as out of date even when the stored rating came from Live.
+
+This split is intentional: site owners get a report about what is currently published, while editors get an on-demand tool for improving what they are about to publish.
+
+## CMS report
+
+The **Brand Voice Compliance** report gives website owners and CMS administrators a worst-first overview of how published content aligns with the configured brand voice.
+
+- Ratings and reasoning come from the background job's Live-content analysis.
+- The **Analysis status** column compares that stored analysis against the page's current CMS content hash, so draft edits can show a row as **Out of date** before anything is published.
+- If no brand voice has been configured in Site Settings, the report shows an informational setup banner instead of the table.
+
+Together, the report and modal cover two different jobs: the report audits the published site, while the modal supports page-by-page editorial review and application on Draft.
