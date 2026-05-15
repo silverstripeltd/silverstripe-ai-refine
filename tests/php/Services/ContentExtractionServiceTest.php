@@ -8,6 +8,7 @@ use SilverstripeLtd\AiBrandVoice\Services\ContentExtractionService;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestDraftDiffPage;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestElementalPage;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestExtension;
+use SilverstripeLtd\AiBrandVoice\Tests\CETestHiddenElement;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestRecord;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestUntemplatedBlock;
 use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
@@ -25,6 +26,7 @@ class ContentExtractionServiceTest extends SapphireTest
         CETestRecord::class,
         CETestDraftDiffPage::class,
         CETestElementalPage::class,
+        CETestHiddenElement::class,
         CETestUntemplatedBlock::class,
         ElementContent::class,
     ];
@@ -34,6 +36,15 @@ class ContentExtractionServiceTest extends SapphireTest
             ElementalPageExtension::class,
         ],
     ];
+
+    /**
+     * Authenticates as a CMS user so interactive Elemental canView() checks behave like the modal.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->logInWithPermission('ADMIN');
+    }
 
     /**
      * Clears content extraction extensions after each test.
@@ -196,6 +207,46 @@ class ContentExtractionServiceTest extends SapphireTest
             static fn(BrandVoiceRewriteTarget $target): string => $target->sourceContent,
             $result->rewriteTargets
         )));
+    }
+
+    /**
+     * Confirms interactive draft extraction excludes Elemental blocks that fail canView().
+     */
+    public function testExtractForDraftCheckExcludesHiddenElementTargets(): void
+    {
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $service = new ContentExtractionService();
+        $page = CETestElementalPage::create([
+            'Title' => 'Permission filtered page',
+        ]);
+        $page->write();
+
+        $visibleElement = ElementContent::create([
+            'HTML' => '<p>Visible block</p>',
+        ]);
+        $hiddenElement = CETestHiddenElement::create([
+            'HTML' => '<p>Hidden block</p>',
+        ]);
+        $page->ElementalArea()->Elements()->add($visibleElement);
+        $page->ElementalArea()->Elements()->add($hiddenElement);
+
+        $result = $service->extractForDraftCheck($page);
+        $targetKeys = array_map(
+            static fn(BrandVoiceRewriteTarget $target): string => $target->targetKey,
+            $result->rewriteTargets
+        );
+        $targetSources = array_map(
+            static fn(BrandVoiceRewriteTarget $target): string => $target->sourceContent,
+            $result->rewriteTargets
+        );
+
+        $this->assertSame([
+            'page:title',
+            sprintf('element:%d:html', $visibleElement->ID),
+        ], $targetKeys);
+        $this->assertContains('Visible block', $targetSources);
+        $this->assertNotContains('Hidden block', $targetSources);
     }
 
     /**

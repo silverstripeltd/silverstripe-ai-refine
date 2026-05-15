@@ -7,10 +7,13 @@ use DNADesign\Elemental\Models\ElementContent;
 use Psr\Log\LoggerInterface;
 use SilverstripeLtd\AiBrandVoice\Controllers\BrandVoiceController;
 use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
+use SilverstripeLtd\AiBrandVoice\Forms\BrandVoiceCheckForm;
 use SilverstripeLtd\AiBrandVoice\Models\BrandVoiceAnalysis;
 use SilverstripeLtd\AiBrandVoice\Providers\ProviderFactory;
+use SilverstripeLtd\AiBrandVoice\Services\BrandVoiceCheckRateLimiter;
 use SilverstripeLtd\AiBrandVoice\Services\ContentExtractionService;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestElementalPage;
+use SilverstripeLtd\AiBrandVoice\Tests\CETestLockedElement;
 use SilverstripeLtd\AiBrandVoice\Tests\CETestUntemplatedBlock;
 use SilverstripeLtd\AiBrandVoice\Tests\RestrictedBrandVoicePage;
 use SilverstripeLtd\AiBrandVoice\Tests\StubProvider;
@@ -22,6 +25,7 @@ use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
@@ -38,6 +42,7 @@ class BrandVoiceControllerTest extends FunctionalTest
     protected static $extra_dataobjects = [
         BrandVoiceAnalysis::class,
         CETestElementalPage::class,
+        CETestLockedElement::class,
         CETestUntemplatedBlock::class,
         ElementContent::class,
         RestrictedBrandVoicePage::class,
@@ -90,6 +95,8 @@ class BrandVoiceControllerTest extends FunctionalTest
      */
     protected function tearDown(): void
     {
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'max_requests', 10);
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'window_seconds', 300);
         $siteConfig = SiteConfig::current_site_config();
         $siteConfig->BrandVoiceDefinition = '';
         $siteConfig->write();
@@ -305,6 +312,104 @@ class BrandVoiceControllerTest extends FunctionalTest
                 'ParentClass' => $page->ClassName,
             ])->count()
         );
+    }
+
+    /**
+     * Confirms rate-limit responses reuse the JSON error channel and do not call the provider twice.
+     */
+    public function testCheckEndpointReturnsRateLimitResponse(): void
+    {
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'max_requests', 1);
+
+        $page = $this->createPage('Rate limited page', '<p>Draft content</p>');
+
+        $firstResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $page->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+        $secondResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $page->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+
+        $this->assertSame(200, $firstResponse->getStatusCode());
+        $this->assertSame(429, $secondResponse->getStatusCode());
+        $this->assertNotEmpty($secondResponse->getHeader('Retry-After'));
+
+        $payload = json_decode((string) $secondResponse->getBody(), true);
+        $this->assertStringContainsString(
+            'Too many AI brand voice requests for this page.',
+            $payload['error'] ?? ''
+        );
+        $this->assertSame(1, $this->provider->evaluationCallCount);
+    }
+
+    /**
+     * Confirms rate limits are tracked separately for each page.
+     */
+    public function testCheckEndpointRateLimitIsScopedPerPage(): void
+    {
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'max_requests', 1);
+
+        $firstPage = $this->createPage('First rate limit page', '<p>Draft content</p>');
+        $secondPage = $this->createPage('Second rate limit page', '<p>Draft content</p>');
+
+        $firstResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $firstPage->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+        $secondResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $secondPage->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+        $repeatFirstResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $firstPage->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+
+        $this->assertSame(200, $firstResponse->getStatusCode());
+        $this->assertSame(200, $secondResponse->getStatusCode());
+        $this->assertSame(429, $repeatFirstResponse->getStatusCode());
+        $this->assertSame(2, $this->provider->evaluationCallCount);
+    }
+
+    /**
+     * Confirms config overrides change both the threshold and cooldown window.
+     */
+    public function testCheckEndpointRateLimitHonoursConfigOverrides(): void
+    {
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'max_requests', 1);
+        Config::modify()->set(BrandVoiceCheckRateLimiter::class, 'window_seconds', 1);
+
+        $page = $this->createPage('Rate limit override page', '<p>Draft content</p>');
+
+        $firstResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $page->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+        $secondResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $page->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+        sleep(2);
+        $thirdResponse = $this->post(
+            '/admin/ai-brand-voice/check/' . $page->ID . '?fqcn=' . rawurlencode(SiteTree::class),
+            [SecurityToken::inst()->getName() => SecurityToken::inst()->getValue()],
+            ['X-SecurityID' => SecurityToken::inst()->getValue()]
+        );
+
+        $this->assertSame(200, $firstResponse->getStatusCode());
+        $this->assertSame(429, $secondResponse->getStatusCode());
+        $this->assertSame('1', $secondResponse->getHeader('Retry-After'));
+        $this->assertSame(200, $thirdResponse->getStatusCode());
+        $this->assertSame(2, $this->provider->evaluationCallCount);
     }
 
     /**
@@ -926,6 +1031,60 @@ class BrandVoiceControllerTest extends FunctionalTest
         );
         $this->assertContains('deleted-target', $reasons);
         $this->assertContains('foreign-target', $reasons);
+    }
+
+    /**
+     * Confirms block canEdit() denials fail the whole apply request with the generic failure message.
+     */
+    public function testApplyEndpointFailsWhenTargetElementCannotBeEdited(): void
+    {
+        $page = Versioned::withVersionedMode(function (): CETestElementalPage {
+            Versioned::set_stage(Versioned::DRAFT);
+
+            $page = CETestElementalPage::create([
+                'Title' => 'Locked apply page',
+            ]);
+            $page->write();
+            $page->ElementalArea()->Elements()->add(CETestLockedElement::create([
+                'HTML' => '<p>Locked block</p>',
+            ]));
+            return DataObject::get(CETestElementalPage::class)->byID($page->ID);
+        });
+
+        /** @var CETestLockedElement $lockedElement */
+        $lockedElement = $page->ElementalArea()->Elements()->first();
+
+        $response = $this->applySuggestionsJson($page, [
+            'suggestions' => [
+                [
+                    'apply' => true,
+                    'targetKey' => 'page:title',
+                    'targetType' => 'page_title',
+                    'targetId' => $page->ID,
+                    'fieldName' => 'Title',
+                    'suggestedContent' => 'Updated locked apply page',
+                ],
+                [
+                    'apply' => true,
+                    'targetKey' => sprintf('element:%d:html', $lockedElement->ID),
+                    'targetType' => 'element_html',
+                    'targetId' => $lockedElement->ID,
+                    'fieldName' => 'HTML',
+                    'suggestedContent' => '<p>Updated locked block</p>',
+                ],
+            ],
+        ]);
+
+        $this->assertSame(403, $response->getStatusCode());
+        $payload = json_decode((string) $response->getBody(), true);
+        $this->assertSame(BrandVoiceCheckForm::APPLY_FAILURE_MESSAGE, $payload['error'] ?? null);
+
+        /** @var CETestElementalPage $unchangedPage */
+        $unchangedPage = $this->getDraftRecord(CETestElementalPage::class, $page->ID);
+        /** @var CETestLockedElement $unchangedElement */
+        $unchangedElement = $this->getDraftRecord(CETestLockedElement::class, $lockedElement->ID);
+        $this->assertSame('Locked apply page', $unchangedPage->Title);
+        $this->assertSame('<p>Locked block</p>', $unchangedElement->HTML);
     }
 
     /**

@@ -31,7 +31,7 @@ class ContentExtractionService
     public function extractForDraftCheck(DataObject $record): BrandVoiceExtractedContent
     {
         $resolvedRecord = $this->resolveRecordForMode($record, self::READ_MODE_DRAFT) ?: $record;
-        return $this->buildExtractedContent($resolvedRecord, self::READ_MODE_DRAFT);
+        return $this->buildExtractedContent($resolvedRecord, self::READ_MODE_DRAFT, true);
     }
 
     /**
@@ -43,7 +43,7 @@ class ContentExtractionService
         if (!$resolvedRecord) {
             return null;
         }
-        return $this->buildExtractedContent($resolvedRecord, self::READ_MODE_LIVE);
+        return $this->buildExtractedContent($resolvedRecord, self::READ_MODE_LIVE, false);
     }
 
     /**
@@ -57,8 +57,11 @@ class ContentExtractionService
     /**
      * Builds the extracted text payload, content hash, and rewrite targets for a record.
      */
-    private function buildExtractedContent(DataObject $record, string $mode): BrandVoiceExtractedContent
-    {
+    private function buildExtractedContent(
+        DataObject $record,
+        string $mode,
+        bool $filterInteractiveElementTargets
+    ): BrandVoiceExtractedContent {
         $parts = [];
         $title = $record->hasField('Title') ? trim((string) $record->Title) : '';
         if ($title !== '') {
@@ -71,7 +74,7 @@ class ContentExtractionService
         $extracted = trim(implode("\n\n", $parts));
         $this->extend('updateExtractedContent', $extracted, $record, $mode);
         $extracted = trim($extracted);
-        $rewriteTargets = $this->buildRewriteTargets($record);
+        $rewriteTargets = $this->buildRewriteTargets($record, $filterInteractiveElementTargets);
         $this->extend('updateExtractedRewriteTargets', $rewriteTargets, $record, $mode);
         return new BrandVoiceExtractedContent(
             $extracted,
@@ -121,7 +124,7 @@ class ContentExtractionService
     /**
      * Builds the safe rewrite targets that AI suggestions may update for a record.
      */
-    private function buildRewriteTargets(DataObject $record): array
+    private function buildRewriteTargets(DataObject $record, bool $filterInteractiveElementTargets): array
     {
         $targets = [];
         $recordId = $record->exists() ? (int) $record->ID : null;
@@ -138,7 +141,7 @@ class ContentExtractionService
             );
         }
 
-        $elementTargets = $this->buildElementRewriteTargets($record);
+        $elementTargets = $this->buildElementRewriteTargets($record, $filterInteractiveElementTargets);
         if ($elementTargets !== []) {
             return array_merge($targets, $elementTargets);
         }
@@ -163,7 +166,7 @@ class ContentExtractionService
     /**
      * Builds rewrite targets for supported Elemental blocks on the current record.
      */
-    private function buildElementRewriteTargets(DataObject $record): array
+    private function buildElementRewriteTargets(DataObject $record, bool $filterInteractiveElementTargets): array
     {
         if (!$record->hasMethod('getElementalRelations')) {
             return [];
@@ -188,6 +191,9 @@ class ContentExtractionService
 
             foreach ($area->Elements() as $element) {
                 if (!$element instanceof BaseElement) {
+                    continue;
+                }
+                if ($filterInteractiveElementTargets && !$element->canView()) {
                     continue;
                 }
 

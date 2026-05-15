@@ -12,6 +12,7 @@ use SilverstripeLtd\AiBrandVoice\Extensions\BrandVoiceSiteTreeExtension;
 use SilverstripeLtd\AiBrandVoice\Forms\BrandVoiceCheckForm;
 use SilverstripeLtd\AiBrandVoice\Models\BrandVoiceAnalysis;
 use SilverstripeLtd\AiBrandVoice\Services\BrandVoiceEvaluationService;
+use SilverstripeLtd\AiBrandVoice\Services\BrandVoiceCheckRateLimiter;
 use SilverstripeLtd\AiBrandVoice\Services\ContentExtractionService;
 use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
 use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
@@ -20,12 +21,14 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Core\XssSanitiser;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\ORM\FieldType\DBHTMLVarchar;
+use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Versioned\Versioned;
@@ -120,6 +123,14 @@ class BrandVoiceController extends FormSchemaController
                 'error' => $this->getEmptyBrandVoiceMessage(),
             ], 400);
         }
+        $retryAfter = $this->getCheckRateLimiter()->consumeRequest(
+            $request->getSession(),
+            $this->getCurrentMemberId(),
+            (int) $record->ID
+        );
+        if ($retryAfter > 0) {
+            return $this->buildRateLimitedCheckResponse($retryAfter);
+        }
         try {
             $result = $this->getEvaluationService()->evaluateDraft($record, $brandVoiceDefinition);
         } catch (AIProviderException $exception) {
@@ -164,10 +175,17 @@ class BrandVoiceController extends FormSchemaController
         if ($suggestions instanceof HTTPResponse) {
             return $suggestions;
         }
-        $result = $this->withDraftStage($record, fn(DataObject $draftRecord): array => $this->applySuggestionsToDraft(
-            $draftRecord,
-            $suggestions
-        ));
+        try {
+            $result = $this->withDraftStage(
+                $record,
+                fn(DataObject $draftRecord): array => $this->applySuggestionsToDraft(
+                    $draftRecord,
+                    $suggestions
+                )
+            );
+        } catch (HTTPResponse_Exception $exception) {
+            return $exception->getResponse();
+        }
         return $this->jsonResponse([
             'appliedCount' => $result['appliedCount'],
             'skippedCount' => $result['skippedCount'],
@@ -433,6 +451,7 @@ class BrandVoiceController extends FormSchemaController
     {
         $rewriteTargetsByKey = $this->getRewriteTargetsByKey($record);
         $pageElementalAreaIds = $this->getElementalAreaIds($record);
+        $resolvedSuggestions = [];
         $seenTargetKeys = [];
         $pageRequiresWrite = false;
         $appliedCount = 0;
@@ -461,13 +480,22 @@ class BrandVoiceController extends FormSchemaController
                 $skippedCount++;
                 continue;
             }
+            $resolvedSuggestions[] = [
+                'index' => $index,
+                'suggestedContent' => $resolvedSuggestion['suggestedContent'],
+                'target' => $resolvedSuggestion['target'],
+            ];
+        }
 
+        $this->assertEditableElementTargets($record, $resolvedSuggestions);
+
+        foreach ($resolvedSuggestions as $resolvedSuggestion) {
             if (!$this->applyResolvedSuggestion(
                 $record,
                 $resolvedSuggestion['target'],
                 $resolvedSuggestion['suggestedContent'],
                 $pageElementalAreaIds,
-                $index,
+                $resolvedSuggestion['index'],
                 $pageRequiresWrite
             )) {
                 $skippedCount++;
@@ -484,6 +512,35 @@ class BrandVoiceController extends FormSchemaController
             'appliedCount' => $appliedCount,
             'skippedCount' => $skippedCount,
         ];
+    }
+
+    /**
+     * Fails the whole apply request when any selected block target cannot be edited.
+     */
+    private function assertEditableElementTargets(DataObject $record, array $resolvedSuggestions): void
+    {
+        $checkedElementIds = [];
+        foreach ($resolvedSuggestions as $resolvedSuggestion) {
+            /** @var BrandVoiceRewriteTarget $target */
+            $target = $resolvedSuggestion['target'];
+            if (!BrandVoiceRewriteTarget::isElementTargetType($target->targetType) || !$target->targetId) {
+                continue;
+            }
+            if (isset($checkedElementIds[$target->targetId])) {
+                continue;
+            }
+            $checkedElementIds[$target->targetId] = true;
+            $element = BaseElement::get()->setUseCache(false)->byID($target->targetId);
+            if ($element && !$element->canEdit()) {
+                $this->getLogger()->warning('Brand Voice apply denied by block permissions', [
+                    'recordClass' => $record->ClassName,
+                    'recordId' => $record->ID,
+                    'targetId' => $target->targetId,
+                    'targetKey' => $target->targetKey,
+                ]);
+                $this->failRequest(403, BrandVoiceCheckForm::APPLY_FAILURE_MESSAGE);
+            }
+        }
     }
 
     /**
@@ -820,6 +877,42 @@ class BrandVoiceController extends FormSchemaController
         ], 403);
     }
 
+    private function buildRateLimitedCheckResponse(int $retryAfter): HTTPResponse
+    {
+        $response = $this->jsonResponse([
+            'error' => $this->getRateLimitErrorMessage($retryAfter),
+        ], 429);
+        $response->addHeader('Retry-After', (string) $retryAfter);
+        return $response;
+    }
+
+    private function getCurrentMemberId(): int
+    {
+        return (int) (Security::getCurrentUser()?->ID ?? 0);
+    }
+
+    private function getRateLimitErrorMessage(int $retryAfter): string
+    {
+        return sprintf(
+            'Too many AI brand voice requests for this page. Please wait %s and try again.',
+            $this->formatCooldownDuration($retryAfter)
+        );
+    }
+
+    private function formatCooldownDuration(int $retryAfter): string
+    {
+        if ($retryAfter >= 60) {
+            $minutes = (int) ceil($retryAfter / 60);
+            return sprintf('%d %s', $minutes, $minutes === 1 ? 'minute' : 'minutes');
+        }
+        return sprintf('%d %s', $retryAfter, $retryAfter === 1 ? 'second' : 'seconds');
+    }
+
+    private function getCheckRateLimiter(): BrandVoiceCheckRateLimiter
+    {
+        return Injector::inst()->get(BrandVoiceCheckRateLimiter::class);
+    }
+
     /**
      * Returns the evaluation service used for draft and background checks.
      */
@@ -934,5 +1027,13 @@ class BrandVoiceController extends FormSchemaController
     {
         return HTTPResponse::create(json_encode($body), $code)
             ->addHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Throws a JSON HTTP error response.
+     */
+    private function failRequest(int $statusCode, string $message): never
+    {
+        throw new HTTPResponse_Exception($this->jsonResponse(['error' => $message], $statusCode));
     }
 }

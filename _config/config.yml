@@ -9,6 +9,10 @@ SilverStripe\SiteConfig\SiteConfig:
   extensions:
     - SilverstripeLtd\AiBrandVoice\Extensions\BrandVoiceSiteConfigExtension
 
+SilverstripeLtd\AiBrandVoice\Services\BrandVoiceCheckRateLimiter:
+  max_requests: 10
+  window_seconds: 300
+
 SilverStripe\Control\Director:
   rules:
     'admin/ai-brand-voice': SilverstripeLtd\AiBrandVoice\Controllers\BrandVoiceController
