@@ -374,7 +374,7 @@ export const AiBrandVoiceModal = ({
 
             <div className="ai-brand-voice-modal__actions">
               <Button
-                color="primary"
+                color="info"
                 type="button"
                 onClick={handleCheck}
                 disabled={actionsDisabled}

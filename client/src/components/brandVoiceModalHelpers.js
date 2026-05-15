@@ -31,9 +31,9 @@ export const defaultSchemaConfig = {
     copyFailure: 'Unable to copy to clipboard',
   },
   labels: {
-    check: 'Check Brand Voice',
-    recheck: 'Re-check Brand Voice',
-    apply: 'Apply suggestions',
+    check: 'Rewrite for Brand Voice',
+    recheck: 'Regenerate',
+    apply: 'Apply Changes',
     copy: 'Copy to clipboard',
     rating: 'Brand voice rating',
     reasoning: 'Reasoning summary',

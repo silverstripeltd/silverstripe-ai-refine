@@ -35,7 +35,7 @@ Stores the background job's analysis result for a page. On-demand (modal) result
 An Extension is applied to `SiteTree` that:
 
 - Provides helper methods to fetch (`getBrandVoiceAnalysis()`) and get-or-create (`getOrCreateBrandVoiceAnalysis()`) the `BrandVoiceAnalysis` record for a page
-- Adds the "Brand Voice" button context to the CMS edit form (see `specs/07_cms-ux.md`)
+- Adds the "Tone" button context to the CMS edit form (see `specs/07_cms-ux.md`)
 - Leaves button visibility and missing-configuration guidance to the CMS UX layer so editors can still open the modal and see the setup message when Site Settings is empty
 
 ### Lifecycle
@@ -107,6 +107,6 @@ Content structure:
 ### Empty state behaviour
 
 When `BrandVoiceDefinition` is empty:
-- The "Brand Voice" button is still shown for editable saved pages so the modal can explain that configuration is missing
+- The "Tone" button is still shown for editable saved pages so the modal can explain that configuration is missing
 - The background job logs a message ("No brand voice definition configured - skipping all pages") and processes zero pages
 - The CMS report shows an informational banner: "No brand voice has been defined. Configure your brand voice in Settings > Brand Voice."

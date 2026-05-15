@@ -6,7 +6,7 @@ The modal is rendered as a React component with an Entwine adapter for integrati
 
 ## Button placement
 
-A "Brand Voice" button in the CMS preview toolbar, rendered immediately to the left of the Shared Draft Content "Share" control when that module is present, and otherwise before the view-mode selector. It uses the same secondary toolbar button styling pattern as Share and shows a leading icon to match adjacent CMS utility actions.
+A "Tone" button in the CMS preview toolbar, rendered immediately to the left of the Shared Draft Content "Share" control when that module is present, and otherwise before the view-mode selector. It uses the same secondary toolbar button styling pattern as Share and shows a leading icon to match adjacent CMS utility actions.
 
 ### Button visibility
 
@@ -36,11 +36,11 @@ The modal does not show this banner while the form is clean. When it does appear
 When no previous result is cached:
 
 - Message: "Click the button below to check this page's content against your brand voice."
-- A "Check Brand Voice" button is prominently displayed
+- A "Rewrite for Brand Voice" button is prominently displayed and uses the CMS info button style
 
 ### Running a check
 
-1. Editor clicks "Check Brand Voice" or "Re-check Brand Voice" if a previous result exists.
+1. Editor clicks "Rewrite for Brand Voice" or "Regenerate" if a previous result exists.
 2. Loading spinner shown while the XHR is in progress.
 3. Button disabled during the request.
 4. Check is also disabled while the page form is dirty, because the request evaluates saved Draft content rather than unsaved inline edits.
@@ -59,7 +59,7 @@ Top to bottom:
    - Heading derived from the target type (`Page title`, `Page content`, or `Content block #{ID}` plus block title or field label when helpful)
    - The server returns `diffHtml`, and the modal renders that diff directly as the review surface instead of scaffolding separate current and suggested preview fields
    - Checkbox to opt that suggestion into the apply request
-5. **Apply suggestions button** - applies the selected suggestions only. It is disabled when there is no result, when no suggestion is selected, while requests are in flight, or while the page form is dirty.
+5. **Apply Changes button** - applies the selected suggestions only. It is disabled when there is no result, when no suggestion is selected, while requests are in flight, or while the page form is dirty. This button uses the CMS info button style.
 
 If the AI returns zero suggestions for an `Excellent` result, the modal shows a success banner ("Your content fully aligns with the brand voice. No changes needed.") and hides the rewrite section entirely. Other zero-suggestion results still show the rewrite section with a "No rewrite suggestions were returned for this page." message.
 
@@ -84,13 +84,13 @@ If the AI returns zero suggestions for an `Excellent` result, the modal shows a 
 ## Loading states
 
 - **Schema load in progress:** A loading indicator is shown while the modal fetches its schema metadata on open, and action buttons remain disabled until that request completes.
-- **Check in progress:** Loading spinner replaces the result area. "Check Brand Voice" and "Re-check Brand Voice" are disabled.
+- **Check in progress:** Loading spinner replaces the result area. "Rewrite for Brand Voice" and "Regenerate" are disabled.
 - **Apply in progress:** The same loading state is shown with "Applying suggestions..." while the Draft write request is in flight.
 
 ## Dirty-state protection
 
 - The modal clears any cached result and shows the saved-draft warning banner while the page edit form has Silverstripe admin's `.changed` class.
-- Both **Check Brand Voice** and **Apply suggestions** are disabled in this state.
+- Both **Rewrite for Brand Voice** and **Apply Changes** are disabled in this state.
 - The warning copy is the same saved-draft notice shown above, rather than a separate dedicated dirty-state message.
 
 ## Apply behaviour
@@ -105,7 +105,7 @@ If the AI returns zero suggestions for an `Excellent` result, the modal shows a 
 The modal has:
 
 - A close control (standard modal close button and escape key)
-- A check or re-check action
-- An apply action for selected suggestions
+- A rewrite or regenerate action
+- An apply changes action for selected suggestions
 
 It does **not** support editing suggestion text inline. Suggestion application is handled through the server-side review and apply flow.

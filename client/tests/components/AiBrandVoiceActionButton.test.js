@@ -18,7 +18,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { AiBrandVoiceActionButton } from '../../src/components/AiBrandVoiceActionButton';
 
-test('renders a share-style secondary toolbar button with brand voice metadata', () => {
+test('renders a share-style secondary toolbar button with tone labelling', () => {
   const { container } = render(
     <AiBrandVoiceActionButton
       fqcn={'App\\Page'}
@@ -26,13 +26,13 @@ test('renders a share-style secondary toolbar button with brand voice metadata',
     />
   );
 
-  const button = screen.getByRole('button', { name: 'Brand Voice' });
+  const button = screen.getByRole('button', { name: 'Tone' });
 
   expect(button.className).toContain('ai-brand-voice__action');
   expect(button.className).toContain('ai-brand-voice-toolbar__button');
   expect(button.className).toContain('btn-secondary');
   expect(button.getAttribute('data-fqcn')).toBe('App\\Page');
   expect(button.getAttribute('data-record-id')).toBe('42');
-  expect(button.getAttribute('title')).toBe('Check Brand Voice');
+  expect(button.getAttribute('title')).toBe('Tone');
   expect(container.querySelector('.font-icon-comment')).not.toBeNull();
 });

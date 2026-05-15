@@ -8,8 +8,8 @@ import Button from 'components/Button/Button';
 export const AiBrandVoiceActionButton = ({
   fqcn,
   recordId,
-  title = 'Brand Voice',
-  tooltip = 'Check Brand Voice',
+  title = 'Tone',
+  tooltip = 'Tone',
 }) => (
   <Button
     type="button"

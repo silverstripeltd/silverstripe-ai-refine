@@ -151,7 +151,9 @@ class BrandVoiceControllerTest extends FunctionalTest
             'Brand voice suggestions applied to draft content',
             $payload['meta']['brandVoice']['messages']['applySuccess'] ?? null
         );
-        $this->assertSame('Apply suggestions', $payload['meta']['brandVoice']['labels']['apply'] ?? null);
+        $this->assertSame('Rewrite for Brand Voice', $payload['meta']['brandVoice']['labels']['check'] ?? null);
+        $this->assertSame('Regenerate', $payload['meta']['brandVoice']['labels']['recheck'] ?? null);
+        $this->assertSame('Apply Changes', $payload['meta']['brandVoice']['labels']['apply'] ?? null);
         $this->assertSame('Needs work', $payload['meta']['brandVoice']['ratingLabels']['NeedsWork'] ?? null);
         $this->assertSame(
             'Apply this suggestion',

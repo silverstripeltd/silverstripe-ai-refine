@@ -82,9 +82,9 @@ test('getResponseErrorMessage prefers explicit error values', () => {
   expect(getResponseErrorMessage({}, 'Fallback')).toBe('Fallback');
 });
 
-test('getCheckButtonLabel switches between check and re-check states', () => {
-  expect(getCheckButtonLabel(null, defaultSchemaConfig)).toBe('Check Brand Voice');
-  expect(getCheckButtonLabel({ rating: 'Good' }, defaultSchemaConfig)).toBe('Re-check Brand Voice');
+test('getCheckButtonLabel switches between initial and iterative labels', () => {
+  expect(getCheckButtonLabel(null, defaultSchemaConfig)).toBe('Rewrite for Brand Voice');
+  expect(getCheckButtonLabel({ rating: 'Good' }, defaultSchemaConfig)).toBe('Regenerate');
 });
 
 test('getRatingLabel uses schema overrides and falls back to the enum value', () => {

@@ -109,21 +109,19 @@ If the definition is empty:
 The on-demand workflow is a review-and-apply modal aimed at CMS editors working on a specific page:
 
 1. Open the page in the CMS and click **Brand Voice** in the preview toolbar.
-2. Click **Check Brand Voice** to evaluate the page's saved Draft content against the configured brand voice.
+2. Click **Rewrite for Brand Voice** to evaluate the page's saved Draft content against the configured brand voice.
 3. Review the returned rating, reasoning summary, and per-target diff cards.
 4. Select only the suggestions you want to accept.
-5. Click **Apply suggestions** to write those changes back to Draft content.
+5. Click **Apply Changes** to write those changes back to Draft content.
 
 The modal does not edit suggestion text inline and does not persist on-demand results to `BrandVoiceAnalysis`. Instead, it acts as a focused review surface for applying selected rewrites to the current page draft.
 
 ### Draft and Live behaviour
 
-This module intentionally uses Draft and Live differently depending on the workflow:
+This module intentionally uses different content for different workflows:
 
-- **Background analysis and report data** are based on published **Live** content. The background job skips draft-only pages and stores ratings for the public version of the site.
-- **The on-demand modal** reads saved **Draft** content so editors can review and improve unpublished changes before publishing.
-- **Apply** writes selected suggestions back to **Draft** only. It never publishes content.
-- **The CMS report** still compares the saved analysis to the page's current CMS content hash, so unpublished draft edits can mark a page as out of date even when the stored rating came from Live.
+- **Page editing** reads `Draft` content so editors can review and improve unpublished changes before publishing. Apply writes selected suggestions back to `Draft` only and never publishes.
+- **Queued job and CMS report** are based on published `Live` content. The queued job skips draft-only pages and stores ratings for the public version of the site. The report displays those stored ratings but compares them against the current `Draft` content hash, so unpublished edits can mark a page as out of date even when the stored rating came from `Live`.
 
 This split is intentional: site owners get a report about what is currently published, while editors get an on-demand tool for improving what they are about to publish.
 
