@@ -38,7 +38,7 @@ Content structure:
 TEXT;
 
     private const EMPTY_STATE_MESSAGE = 'No brand voice has been defined. Configure your brand voice in '
-        . 'Settings > Brand Voice.';
+        . 'Settings > Brand voice.';
 
     private static $db = [
         'BrandVoiceDefinition' => 'Text',
@@ -49,11 +49,11 @@ TEXT;
      */
     public function updateCMSFields(FieldList $fields): void
     {
-        $fields->findOrMakeTab('Root.BrandVoice', 'Brand Voice');
+        $fields->findOrMakeTab('Root.BrandVoice', 'Brand voice');
 
         $field = TextareaField::create(
             'BrandVoiceDefinition',
-            'Brand Voice Definition'
+            'Brand voice definition'
         )
             ->setDescription(self::BRAND_VOICE_HELP)
             ->setRows(18)
@@ -85,12 +85,12 @@ TEXT;
         }
 
         if ($length < 50) {
-            $result->addError('Brand Voice Definition must be at least 50 characters long.');
+            $result->addError('Brand voice definition must be at least 50 characters long.');
             return;
         }
 
         if ($length > 10000) {
-            $result->addError('Brand Voice Definition must be 10,000 characters or fewer.');
+            $result->addError('Brand voice definition must be 10,000 characters or fewer.');
         }
     }
 

@@ -135,6 +135,10 @@ class BrandVoiceControllerTest extends FunctionalTest
         $this->assertArrayHasKey('schema', $payload);
         $this->assertArrayHasKey('state', $payload);
         $this->assertSame(
+            'Rewrite with brand voice using AI',
+            $payload['meta']['brandVoice']['title'] ?? null
+        );
+        $this->assertSame(
             'This check evaluates your saved draft content. Save the page to draft before checking if you'
             . ' have unsaved changes.',
             $payload['meta']['brandVoice']['messages']['draftNotice'] ?? null
@@ -151,9 +155,9 @@ class BrandVoiceControllerTest extends FunctionalTest
             'Brand voice suggestions applied to draft content',
             $payload['meta']['brandVoice']['messages']['applySuccess'] ?? null
         );
-        $this->assertSame('Rewrite for Brand Voice', $payload['meta']['brandVoice']['labels']['check'] ?? null);
+        $this->assertSame('Rewrite for brand voice', $payload['meta']['brandVoice']['labels']['check'] ?? null);
         $this->assertSame('Regenerate', $payload['meta']['brandVoice']['labels']['recheck'] ?? null);
-        $this->assertSame('Apply Changes', $payload['meta']['brandVoice']['labels']['apply'] ?? null);
+        $this->assertSame('Apply changes', $payload['meta']['brandVoice']['labels']['apply'] ?? null);
         $this->assertSame('Needs work', $payload['meta']['brandVoice']['ratingLabels']['NeedsWork'] ?? null);
         $this->assertSame(
             'Apply this suggestion',
@@ -211,7 +215,7 @@ class BrandVoiceControllerTest extends FunctionalTest
         $payload = json_decode((string) $response->getBody(), true);
         $this->assertFalse($payload['meta']['brandVoice']['state']['brandVoiceConfigured'] ?? true);
         $this->assertSame(
-            'No brand voice has been defined. Configure your brand voice in Settings > Brand Voice.',
+            'No brand voice has been defined. Configure your brand voice in Settings > Brand voice.',
             $payload['meta']['brandVoice']['messages']['missingBrandVoice'] ?? null
         );
     }
@@ -453,7 +457,7 @@ class BrandVoiceControllerTest extends FunctionalTest
         $this->assertSame(400, $response->getStatusCode());
         $payload = json_decode((string) $response->getBody(), true);
         $this->assertSame(
-            'No brand voice has been defined. Configure your brand voice in Settings > Brand Voice.',
+            'No brand voice has been defined. Configure your brand voice in Settings > Brand voice.',
             $payload['error'] ?? null
         );
         $this->assertSame(0, $this->provider->evaluationCallCount);

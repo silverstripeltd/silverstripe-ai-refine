@@ -93,7 +93,7 @@ class BrandVoiceSiteConfigExtensionTest extends SapphireTest
         $field = $fields->dataFieldByName('BrandVoiceDefinition');
 
         $this->assertInstanceOf(TextareaField::class, $field);
-        $this->assertSame('Brand Voice Definition', $field->Title());
+        $this->assertSame('Brand voice definition', $field->Title());
         $this->assertStringContainsString(
             'Define your brand\'s tone of voice',
             (string) $field->getDescription()

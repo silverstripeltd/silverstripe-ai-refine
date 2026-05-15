@@ -80,7 +80,7 @@ test('renders a visible close button in the modal header', async () => {
     json: async () => ({
       meta: {
         brandVoice: {
-          title: 'Brand Voice',
+          title: 'Rewrite with brand voice using AI',
         },
       },
     }),
@@ -90,6 +90,7 @@ test('renders a visible close button in the modal header', async () => {
 
   render(<AiBrandVoiceModal {...props} />);
 
+  expect(screen.getByText('Rewrite with brand voice using AI')).not.toBeNull();
   const closeButton = screen.getByRole('button', { name: 'Close' });
 
   expect(closeButton.className).toContain('btn-close');
@@ -111,7 +112,7 @@ test('disables check and apply while the edit form is dirty', async () => {
       meta: {
         brandVoice: {
           labels: {
-            apply: 'Apply Changes',
+            apply: 'Apply changes',
           },
           state: {
             contentHash: 'draft-hash-1',
@@ -145,8 +146,8 @@ test('disables check and apply while the edit form is dirty', async () => {
 
   expect(screen.queryByText(/save the page to draft before checking if you have unsaved changes/i)).not.toBeNull();
   expect(screen.getByRole('button', { name: 'Regenerate' }).disabled).toBe(true);
-  expect(screen.queryByRole('button', { name: 'Apply Changes' })).toBeNull();
-  expect(screen.queryByRole('checkbox', { name: 'Apply Page title' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Apply changes' }).disabled).toBe(true);
+  expect(screen.getByRole('checkbox', { name: 'Apply Page title' }).disabled).toBe(true);
 });
 
 test('checks content, renders per-suggestion review cards, and applies selected suggestions', async () => {
@@ -172,7 +173,7 @@ test('checks content, renders per-suggestion review cards, and applies selected 
               applyUrl: '/schema-apply-url',
             },
             labels: {
-              apply: 'Apply Changes',
+              apply: 'Apply changes',
             },
             state: {
               contentHash: 'draft-hash-1',
@@ -216,11 +217,11 @@ test('checks content, renders per-suggestion review cards, and applies selected 
     const { container } = render(<AiBrandVoiceModal {...props} />);
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Rewrite for Brand Voice' }).disabled).toBe(false));
-    expect(screen.getByRole('button', { name: 'Rewrite for Brand Voice' }).getAttribute('color')).toBe('info');
-    expect(screen.queryByRole('button', { name: 'Apply Changes' })).toBeNull();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rewrite for brand voice' }).disabled).toBe(false));
+    expect(screen.getByRole('button', { name: 'Rewrite for brand voice' }).getAttribute('color')).toBe('info');
+    expect(screen.queryByRole('button', { name: 'Apply changes' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rewrite for Brand Voice' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rewrite for brand voice' }));
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByText('Content block #12 - Content')).not.toBeNull());
@@ -253,11 +254,11 @@ test('checks content, renders per-suggestion review cards, and applies selected 
     expect(screen.queryByText('Closer to the brief.')).not.toBeNull();
     expect(screen.queryByText('Current draft content')).toBeNull();
     expect(screen.queryByText('Suggested draft content')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Apply Changes' }).getAttribute('color')).toBe('info');
+    expect(screen.getByRole('button', { name: 'Apply changes' }).getAttribute('color')).toBe('info');
     expect(container.querySelectorAll('.ai-brand-voice-modal__actions button')).toHaveLength(1);
-    expect(container.querySelector('.ai-brand-voice-modal__footer-actions button')?.textContent).toBe('Apply Changes');
+    expect(container.querySelector('.ai-brand-voice-modal__footer-actions button')?.textContent).toBe('Apply changes');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply Changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3));
 
@@ -302,7 +303,7 @@ test('renders a single diff row for each suggestion', async () => {
       meta: {
         brandVoice: {
           labels: {
-            apply: 'Apply Changes',
+            apply: 'Apply changes',
           },
           state: {
             contentHash: 'draft-hash-2',
@@ -359,6 +360,7 @@ test('renders a single diff row for each suggestion', async () => {
   />);
 
   await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.queryByText('Page title')).not.toBeNull());
 
   expect(container.querySelectorAll('.ai-brand-voice-modal__suggestion-diff')).toHaveLength(2);
   expect(container.querySelectorAll('.ai-brand-voice-modal__suggestion-diff del')).toHaveLength(2);
@@ -456,7 +458,7 @@ test('shows an aligned success banner when an Excellent result has no suggestion
   expect(screen.queryByText('Suggested rewrites')).toBeNull();
   expect(screen.queryByText('No rewrite suggestions were returned for this page.')).toBeNull();
   expect(screen.queryByRole('checkbox', { name: 'Apply Page title' })).toBeNull();
-  expect(screen.queryByRole('button', { name: 'Apply Changes' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Apply changes' })).toBeNull();
 });
 
 test('shows the generic no-suggestions message for non-Excellent empty results', async () => {
@@ -508,7 +510,7 @@ test('shows schema load failures in the modal banner and toast state', async () 
   await waitFor(() => expect(screen.getByText('Schema unavailable')).not.toBeNull());
   expect(props.actions.toasts.error).toHaveBeenCalledWith('Schema unavailable');
   expect(screen.getByText('Schema unavailable')).not.toBeNull();
-  expect(screen.queryByRole('button', { name: 'Rewrite for Brand Voice' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Rewrite for brand voice' })).toBeNull();
 });
 
 test('clears stale cached results when the saved draft hash has changed', async () => {
@@ -554,7 +556,7 @@ test('clears stale cached results when the saved draft hash has changed', async 
   expect(screen.queryByText('Mostly aligned.')).toBeNull();
   expect(screen.queryByText('Page title')).toBeNull();
   expect(screen.queryByText('Click the button below to check this page\'s content against your brand voice.')).not.toBeNull();
-  expect(screen.getByRole('button', { name: 'Rewrite for Brand Voice' })).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'Rewrite for brand voice' })).not.toBeNull();
 });
 
 test('shows a warning toast for partial apply responses that do not reload the cms', async () => {
@@ -580,7 +582,7 @@ test('shows a warning toast for partial apply responses that do not reload the c
               applyUrl: '/schema-apply-url',
             },
             labels: {
-              apply: 'Apply Changes',
+              apply: 'Apply changes',
             },
             state: {
               supportsApply: true,
@@ -622,14 +624,14 @@ test('shows a warning toast for partial apply responses that do not reload the c
     render(<AiBrandVoiceModal {...props} />);
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Rewrite for Brand Voice' }).disabled).toBe(false));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rewrite for brand voice' }).disabled).toBe(false));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rewrite for Brand Voice' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rewrite for brand voice' }));
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply Changes' }).disabled).toBe(false));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply changes' }).disabled).toBe(false));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply Changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3));
 

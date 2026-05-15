@@ -34,7 +34,7 @@ class BrandVoiceReport extends Report
     private const FILTER_NOT_ANALYSED = 'NotAnalysed';
     private const REASONING_LIMIT = 150;
 
-    protected $title = 'Brand Voice Compliance';
+    protected $title = 'Brand voice compliance';
     protected $description = 'Ratings are based on published (Live) page content, evaluated by a background job.';
 
     /**
@@ -352,7 +352,7 @@ class BrandVoiceReport extends Report
         if ($siteConfig && $siteConfig->hasMethod('getBrandVoiceEmptyStateMessage')) {
             return $siteConfig->getBrandVoiceEmptyStateMessage();
         }
-        return 'No brand voice has been defined. Configure your brand voice in Settings > Brand Voice.';
+        return 'No brand voice has been defined. Configure your brand voice in Settings > Brand voice.';
     }
 
     /**

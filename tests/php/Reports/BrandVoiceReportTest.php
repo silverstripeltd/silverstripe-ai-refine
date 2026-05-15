@@ -149,7 +149,7 @@ class BrandVoiceReportTest extends SapphireTest
         $banner = $fields->fieldByName('BrandVoiceBanner');
         $this->assertInstanceOf(LiteralField::class, $banner);
         $this->assertStringContainsString(
-            'No brand voice has been defined. Configure your brand voice in Settings &gt; Brand Voice.',
+            'No brand voice has been defined. Configure your brand voice in Settings &gt; Brand voice.',
             (string) $banner->getContent()
         );
         $this->assertNull($fields->fieldByName('Report'));

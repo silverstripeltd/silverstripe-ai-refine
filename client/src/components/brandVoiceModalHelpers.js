@@ -4,7 +4,7 @@ import { joinUrlPaths } from 'lib/urls';
 export const CONTROLLER_CONFIG_KEY = 'SilverstripeLtd\\AiBrandVoice\\Controllers\\BrandVoiceController';
 
 export const defaultSchemaConfig = {
-  title: 'Brand Voice',
+  title: 'Rewrite with brand voice using AI',
   ratingLabels: {
     Excellent: 'Excellent',
     Good: 'Good',
@@ -15,7 +15,7 @@ export const defaultSchemaConfig = {
   messages: {
     draftNotice: 'This check evaluates your saved draft content. Save the page to draft before checking if you have unsaved changes.',
     emptyState: 'Click the button below to check this page\'s content against your brand voice.',
-    missingBrandVoice: 'No brand voice has been defined. Configure your brand voice in Settings > Brand Voice.',
+    missingBrandVoice: 'No brand voice has been defined. Configure your brand voice in Settings > Brand voice.',
     allAligned: 'Your content fully aligns with the brand voice. No changes needed.',
     noContent: 'This page has no content to evaluate',
     checkSuccess: 'Brand voice check complete',
@@ -23,7 +23,7 @@ export const defaultSchemaConfig = {
     reviewNotice: 'Review each suggestion below before writing it back to draft content. Applying suggestions updates the saved draft record on the server and then reloads the CMS.',
     noSuggestions: 'No rewrite suggestions were returned for this page.',
     dirtyState: 'Check and apply are disabled while this page has unsaved changes. Save or discard them first. '
-      + 'Brand Voice uses saved draft content as the source of truth, and applying suggestions reloads the page.',
+      + 'Brand voice uses saved draft content as the source of truth, and applying suggestions reloads the page.',
     applySuccess: 'Brand voice suggestions applied to draft content',
     applyPartial: 'Some suggestions could not be applied',
     applyFailure: 'Unable to apply brand voice suggestions',
@@ -31,9 +31,9 @@ export const defaultSchemaConfig = {
     copyFailure: 'Unable to copy to clipboard',
   },
   labels: {
-    check: 'Rewrite for Brand Voice',
+    check: 'Rewrite for brand voice',
     recheck: 'Regenerate',
-    apply: 'Apply Changes',
+    apply: 'Apply changes',
     copy: 'Copy to clipboard',
     rating: 'Brand voice rating',
     reasoning: 'Reasoning summary',

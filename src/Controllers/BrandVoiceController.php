@@ -46,7 +46,7 @@ class BrandVoiceController extends FormSchemaController
 
     private static $url_segment = 'ai-brand-voice';
 
-    private static $menu_title = 'Brand Voice';
+    private static $menu_title = 'Brand voice';
 
     private static $menu_priority = -1;
 
@@ -884,7 +884,7 @@ class BrandVoiceController extends FormSchemaController
         if ($siteConfig && $siteConfig->hasMethod('getBrandVoiceEmptyStateMessage')) {
             return (string) $siteConfig->getBrandVoiceEmptyStateMessage();
         }
-        return 'No brand voice has been defined. Configure your brand voice in Settings > Brand Voice.';
+        return 'No brand voice has been defined. Configure your brand voice in Settings > Brand voice.';
     }
 
     /**

@@ -20,15 +20,15 @@ use SilverStripe\View\HTML;
 class BrandVoiceCheckForm extends Form
 {
     public const FORM_NAME_TEMPLATE = 'BrandVoiceCheckForm_%s';
-    public const MODAL_TITLE = 'Brand Voice';
+    public const MODAL_TITLE = 'Rewrite with brand voice using AI';
     public const DRAFT_NOTICE = 'This check evaluates your saved draft content. Save the page to draft before'
         . ' checking if you have unsaved changes.';
     public const EMPTY_STATE_MESSAGE = 'Click the button below to check this page\'s content against your'
         . ' brand voice.';
     public const ALL_ALIGNED_MESSAGE = 'Your content fully aligns with the brand voice. No changes needed.';
-    public const CHECK_BUTTON_LABEL = 'Rewrite for Brand Voice';
+    public const CHECK_BUTTON_LABEL = 'Rewrite for brand voice';
     public const RECHECK_BUTTON_LABEL = 'Regenerate';
-    public const APPLY_BUTTON_LABEL = 'Apply Changes';
+    public const APPLY_BUTTON_LABEL = 'Apply changes';
     public const APPLY_SUGGESTION_LABEL = 'Apply this suggestion';
     public const CHECK_SUCCESS_MESSAGE = 'Brand voice check complete';
     public const CHECK_FAILURE_MESSAGE = 'Brand voice check failed';

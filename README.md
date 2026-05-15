@@ -1,4 +1,4 @@
-# AI Brand Voice Module for Silverstripe CMS
+# AI brand voice module for Silverstripe CMS
 
 A Silverstripe CMS 6 module that lets users define a corporate content style guide and uses AI to evaluate whether page content adheres to it. The module analyses each page against the style guide and surfaces compliance status and recommendations in the CMS.
 
@@ -96,7 +96,7 @@ The rate limit delay is measured from the **start** of each API request, not fro
 
 ### SiteConfig dependency
 
-Brand Voice depends on `SiteConfig.BrandVoiceDefinition`. Editors configure this in **Settings > Brand Voice**, and both the background job and the on-demand modal use that same definition as the source of truth.
+Brand voice depends on `SiteConfig.BrandVoiceDefinition`. Editors configure this in **Settings > Brand voice**, and both the background job and the on-demand modal use that same definition as the source of truth.
 
 If the definition is empty:
 
@@ -108,11 +108,11 @@ If the definition is empty:
 
 The on-demand workflow is a review-and-apply modal aimed at CMS editors working on a specific page:
 
-1. Open the page in the CMS and click **Brand Voice** in the preview toolbar.
-2. Click **Rewrite for Brand Voice** to evaluate the page's saved Draft content against the configured brand voice.
+1. Open the page in the CMS and click **Brand voice** in the preview toolbar.
+2. Click **Rewrite for brand voice** to evaluate the page's saved Draft content against the configured brand voice.
 3. Review the returned rating, reasoning summary, and per-target diff cards.
 4. Select only the suggestions you want to accept.
-5. Click **Apply Changes** to write those changes back to Draft content.
+5. Click **Apply changes** to write those changes back to Draft content.
 
 The modal does not edit suggestion text inline and does not persist on-demand results to `BrandVoiceAnalysis`. Instead, it acts as a focused review surface for applying selected rewrites to the current page draft.
 
@@ -127,7 +127,7 @@ This split is intentional: site owners get a report about what is currently publ
 
 ## CMS report
 
-The **Brand Voice Compliance** report gives website owners and CMS administrators a worst-first overview of how published content aligns with the configured brand voice.
+The **Brand voice compliance** report gives website owners and CMS administrators a worst-first overview of how published content aligns with the configured brand voice.
 
 - Ratings and reasoning come from the background job's Live-content analysis.
 - The **Analysis status** column compares that stored analysis against the page's current CMS content hash, so draft edits can show a row as **Out of date** before anything is published.

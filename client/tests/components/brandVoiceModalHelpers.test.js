@@ -83,7 +83,7 @@ test('getResponseErrorMessage prefers explicit error values', () => {
 });
 
 test('getCheckButtonLabel switches between initial and iterative labels', () => {
-  expect(getCheckButtonLabel(null, defaultSchemaConfig)).toBe('Rewrite for Brand Voice');
+  expect(getCheckButtonLabel(null, defaultSchemaConfig)).toBe('Rewrite for brand voice');
   expect(getCheckButtonLabel({ rating: 'Good' }, defaultSchemaConfig)).toBe('Regenerate');
 });
 
