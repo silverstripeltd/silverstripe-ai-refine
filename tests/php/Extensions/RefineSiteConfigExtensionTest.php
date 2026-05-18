@@ -93,7 +93,7 @@ class RefineSiteConfigExtensionTest extends SapphireTest
         $field = $fields->dataFieldByName('RefineDefinition');
 
         $this->assertInstanceOf(TextareaField::class, $field);
-        $this->assertSame('Refine guidance', $field->Title());
+        $this->assertSame('Writing style and tone rules', $field->Title());
         $this->assertStringContainsString(
             'Define how AI should refine your content',
             (string) $field->getDescription()

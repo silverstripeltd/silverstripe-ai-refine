@@ -53,7 +53,7 @@ TEXT;
 
         $field = TextareaField::create(
             'RefineDefinition',
-            'Refine guidance'
+            'Writing style and tone rules'
         )
             ->setDescription(self::REFINE_HELP)
             ->setRows(18)
@@ -85,12 +85,12 @@ TEXT;
         }
 
         if ($length < 50) {
-            $result->addError('Refine guidance must be at least 50 characters long.');
+            $result->addError('Writing style and tone rules must be at least 50 characters long.');
             return;
         }
 
         if ($length > 10000) {
-            $result->addError('Refine guidance must be 10,000 characters or fewer.');
+            $result->addError('Writing style and tone rules must be 10,000 characters or fewer.');
         }
     }
 

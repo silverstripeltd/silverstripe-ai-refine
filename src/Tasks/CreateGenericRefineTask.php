@@ -20,7 +20,7 @@ class CreateGenericRefineTask extends BuildTask
     protected static string $description = 'Create a generic refine definition in Site Settings.';
 
     private const GENERIC_REFINE_DEFINITION = <<<'TEXT'
-Our refine is bold, confident, and composed.
+Our tone is bold, confident, and composed.
 We sit somewhere between a government agency and a financial organisation
 that sees itself as leading the industry.
 We communicate with authority, stability, and calm control,
