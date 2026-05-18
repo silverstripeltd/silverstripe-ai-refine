@@ -1,9 +1,9 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
-use SilverstripeLtd\AiBrandVoice\Services\ContentExtractionService;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
+use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 
@@ -31,9 +31,9 @@ class CETestExtension extends Extension
             return;
         }
 
-        $targets[] = new BrandVoiceRewriteTarget(
+        $targets[] = new RefineRewriteTarget(
             'extension:summary',
-            BrandVoiceRewriteTarget::TYPE_PAGE_CONTENT,
+            RefineRewriteTarget::TYPE_PAGE_CONTENT,
             'Content',
             $record->exists() ? (int) $record->ID : null,
             'Extension supplied summary',

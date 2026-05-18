@@ -1,9 +1,9 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Providers;
+namespace SilverstripeLtd\AiRefine\Providers;
 
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 
@@ -28,8 +28,8 @@ class ProviderFactory
     public function getProvider(): AbstractAIProvider
     {
         $provider = 'gemini';
-        if (Environment::hasEnv('AI_BRAND_VOICE_PROVIDER')) {
-            $configured = Environment::getEnv('AI_BRAND_VOICE_PROVIDER');
+        if (Environment::hasEnv('AI_REFINE_PROVIDER')) {
+            $configured = Environment::getEnv('AI_REFINE_PROVIDER');
             if ($configured !== null && $configured !== '' && $configured !== false) {
                 $provider = strtolower((string) $configured);
             }

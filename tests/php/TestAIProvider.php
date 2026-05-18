@@ -1,10 +1,10 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use SilverstripeLtd\AiBrandVoice\Providers\AbstractAIProvider;
+use SilverstripeLtd\AiRefine\Providers\AbstractAIProvider;
 
 /**
  * Test provider that returns canned responses.

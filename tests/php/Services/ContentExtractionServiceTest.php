@@ -1,17 +1,17 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests\Services;
+namespace SilverstripeLtd\AiRefine\Tests\Services;
 
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use DNADesign\Elemental\Models\ElementContent;
-use SilverstripeLtd\AiBrandVoice\Services\ContentExtractionService;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestDraftDiffPage;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestElementalPage;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestExtension;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestHiddenElement;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestRecord;
-use SilverstripeLtd\AiBrandVoice\Tests\CETestUntemplatedBlock;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
+use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
+use SilverstripeLtd\AiRefine\Tests\CETestDraftDiffPage;
+use SilverstripeLtd\AiRefine\Tests\CETestElementalPage;
+use SilverstripeLtd\AiRefine\Tests\CETestExtension;
+use SilverstripeLtd\AiRefine\Tests\CETestHiddenElement;
+use SilverstripeLtd\AiRefine\Tests\CETestRecord;
+use SilverstripeLtd\AiRefine\Tests\CETestUntemplatedBlock;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\SapphireTest;
@@ -84,7 +84,7 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
         $this->assertSame('Page name', $result->rewriteTargets[0]->fieldLabel);
         $this->assertSame('', $result->rewriteTargets[0]->targetTitle);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_PAGE_CONTENT, $result->rewriteTargets[1]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_PAGE_CONTENT, $result->rewriteTargets[1]->targetType);
         $this->assertSame('Draft content', $result->rewriteTargets[1]->sourceContent);
         $this->assertSame('<p>Draft content</p>', $result->rewriteTargets[1]->getDiffSourceContent());
         $this->assertSame('Content', $result->rewriteTargets[1]->fieldLabel);
@@ -194,7 +194,7 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertCount(3, $result->rewriteTargets);
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
         $this->assertStringStartsWith('element:', $result->rewriteTargets[1]->targetKey);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[1]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[1]->targetType);
         $this->assertSame('HTML', $result->rewriteTargets[1]->fieldName);
         $this->assertSame('First block', $result->rewriteTargets[1]->sourceContent);
         $this->assertSame('<p>First block</p>', $result->rewriteTargets[1]->getDiffSourceContent());
@@ -204,7 +204,7 @@ class ContentExtractionServiceTest extends SapphireTest
             $result->rewriteTargets[2]->getDiffSourceContent()
         );
         $this->assertStringNotContainsString('Legacy content', implode(' ', array_map(
-            static fn(BrandVoiceRewriteTarget $target): string => $target->sourceContent,
+            static fn(RefineRewriteTarget $target): string => $target->sourceContent,
             $result->rewriteTargets
         )));
     }
@@ -233,11 +233,11 @@ class ContentExtractionServiceTest extends SapphireTest
 
         $result = $service->extractForDraftCheck($page);
         $targetKeys = array_map(
-            static fn(BrandVoiceRewriteTarget $target): string => $target->targetKey,
+            static fn(RefineRewriteTarget $target): string => $target->targetKey,
             $result->rewriteTargets
         );
         $targetSources = array_map(
-            static fn(BrandVoiceRewriteTarget $target): string => $target->sourceContent,
+            static fn(RefineRewriteTarget $target): string => $target->sourceContent,
             $result->rewriteTargets
         );
 
@@ -281,17 +281,17 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertStringNotContainsString('Legacy fallback', $result->content);
         $this->assertCount(4, $result->rewriteTargets);
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[1]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[1]->targetType);
         $this->assertSame('MyField', $result->rewriteTargets[1]->fieldName);
         $this->assertSame('My field', $result->rewriteTargets[1]->fieldLabel);
         $this->assertSame('My content block', $result->rewriteTargets[1]->targetTitle);
         $this->assertSame('Untemplated block title', $result->rewriteTargets[1]->sourceContent);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[2]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[2]->targetType);
         $this->assertSame('MyBigField', $result->rewriteTargets[2]->fieldName);
         $this->assertSame('My big field', $result->rewriteTargets[2]->fieldLabel);
         $this->assertSame('My content block', $result->rewriteTargets[2]->targetTitle);
         $this->assertSame('Untemplated block copy', $result->rewriteTargets[2]->sourceContent);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[3]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[3]->targetType);
         $this->assertSame('HTML', $result->rewriteTargets[3]->fieldName);
         $this->assertSame('HTML', $result->rewriteTargets[3]->fieldLabel);
         $this->assertSame('Content', $result->rewriteTargets[3]->targetTitle);
@@ -319,7 +319,7 @@ class ContentExtractionServiceTest extends SapphireTest
 
         $this->assertCount(3, $result->rewriteTargets);
         $this->assertSame('extension:summary', $result->rewriteTargets[2]->targetKey);
-        $this->assertSame(BrandVoiceRewriteTarget::TYPE_PAGE_CONTENT, $result->rewriteTargets[2]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_PAGE_CONTENT, $result->rewriteTargets[2]->targetType);
         $this->assertSame('Content', $result->rewriteTargets[2]->fieldName);
         $this->assertSame($page->ID, $result->rewriteTargets[2]->targetId);
         $this->assertSame('Extension supplied summary', $result->rewriteTargets[2]->sourceContent);

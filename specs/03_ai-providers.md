@@ -4,7 +4,7 @@
 
 The module includes a provider abstraction layer supporting multiple AI providers. One provider is active at a time, selected via environment variable. The module ships with three built-in providers:
 
-- **Gemini** - primary provider (default). Calls the v1beta `generateContent` endpoint and includes `thinkingConfig.thinkingLevel` when `AI_BRAND_VOICE_THINKING_LEVEL` is not `none`.
+- **Gemini** - primary provider (default). Calls the v1beta `generateContent` endpoint and includes `thinkingConfig.thinkingLevel` when `AI_REFINE_THINKING_LEVEL` is not `none`.
 - **OpenAI** - Chat Completions API provider
 - **Anthropic** - Messages API provider
 - **Custom providers** - the built-in factory supports `gemini`, `openai`, and `anthropic` only. To use a custom provider, projects must override the factory via Silverstripe's Injector.
@@ -17,42 +17,42 @@ All providers extend `AbstractAIProvider`, which supplies the evaluation methods
 abstract class AbstractAIProvider
 {
     /**
-     * Evaluate page content against a brand voice definition.
+     * Evaluate page content against a refine definition.
      */
-    public function evaluateBrandVoice(
+    public function evaluateRefine(
         string $content,
         string $pageTitle,
-        string $brandVoiceDefinition,
+        string $refineDefinition,
         array $rewriteTargets = []
-    ): BrandVoiceFullResult;
+    ): RefineFullResult;
 }
 ```
 
-### BrandVoiceRatingResult
+### RefineRatingResult
 
 Base value object carrying the rating and reasoning shared by all evaluation results:
 
 ```php
-class BrandVoiceRatingResult
+class RefineRatingResult
 {
     public string $rating;             // One of: Excellent, Good, Adequate, NeedsWork, Poor
     public string $reasoningSummary;   // AI explanation of the rating
 }
 ```
 
-### BrandVoiceFullResult
+### RefineFullResult
 
 Value object returned by the shared evaluation prompt (extends rating result):
 
 ```php
-class BrandVoiceFullResult
+class RefineFullResult
 {
     public string $rating;
     public string $reasoningSummary;
-    public array $suggestions;  // list<BrandVoiceSuggestion>
+    public array $suggestions;  // list<RefineSuggestion>
 }
 
-class BrandVoiceSuggestion
+class RefineSuggestion
 {
     public string $targetKey;
     public string $targetType;
@@ -63,7 +63,7 @@ class BrandVoiceSuggestion
 }
 ```
 
-The provider parses `targetKey`, `targetType`, and `suggestedContent` directly from the model response. `BrandVoiceEvaluationService` then resolves each suggestion back onto a server-known rewrite target, filling in `fieldName`, `targetId`, and `sourceContent` before the result is returned to the modal.
+The provider parses `targetKey`, `targetType`, and `suggestedContent` directly from the model response. `RefineEvaluationService` then resolves each suggestion back onto a server-known rewrite target, filling in `fieldName`, `targetId`, and `sourceContent` before the result is returned to the modal.
 
 ## Configuration
 
@@ -71,20 +71,20 @@ All configuration via environment variables:
 
 | Environment variable | Description | Default |
 |---|---|---|
-| `AI_BRAND_VOICE_PROVIDER` | Active provider (`gemini`, `openai`, `anthropic`) | `gemini` |
-| `AI_BRAND_VOICE_API_KEY` | API key for the active provider | (required) |
-| `AI_BRAND_VOICE_MODEL` | Model to use | Provider-specific default |
-| `AI_BRAND_VOICE_THINKING_LEVEL` | Thinking level for Gemini | `low` |
-| `AI_BRAND_VOICE_TEMPERATURE` | Temperature for generation | `0.0` |
-| `AI_BRAND_VOICE_MAX_TOKENS` | Max tokens in response for the shared evaluation prompt | `20000` |
-| `AI_BRAND_VOICE_REQUEST_TIMEOUT` | Request timeout in seconds | `15` |
-| `AI_BRAND_VOICE_RATE_LIMIT_DELAY` | Delay between API calls (background job) | `6` |
+| `AI_REFINE_PROVIDER` | Active provider (`gemini`, `openai`, `anthropic`) | `gemini` |
+| `AI_REFINE_API_KEY` | API key for the active provider | (required) |
+| `AI_REFINE_MODEL` | Model to use | Provider-specific default |
+| `AI_REFINE_THINKING_LEVEL` | Thinking level for Gemini | `low` |
+| `AI_REFINE_TEMPERATURE` | Temperature for generation | `0.0` |
+| `AI_REFINE_MAX_TOKENS` | Max tokens in response for the shared evaluation prompt | `20000` |
+| `AI_REFINE_REQUEST_TIMEOUT` | Request timeout in seconds | `15` |
+| `AI_REFINE_RATE_LIMIT_DELAY` | Delay between API calls (background job) | `6` |
 
 **Note:** Both background and on-demand evaluation use the same rewrite-aware prompt. This is a conscious tradeoff: asking the model to rewrite the page exposes weaknesses and omissions that can be missed by a score-only prompt, which produces better audit behaviour even though it uses more tokens. The background job still discards the returned `suggestions` payload after persisting rating and reasoning.
 
-**Compatibility:** `AI_BRAND_VOICE_REWRITE_MAX_TOKENS` is still honoured as a fallback alias if it is already configured in a project, but `AI_BRAND_VOICE_MAX_TOKENS` is the primary setting going forward.
+**Compatibility:** `AI_REFINE_REWRITE_MAX_TOKENS` is still honoured as a fallback alias if it is already configured in a project, but `AI_REFINE_MAX_TOKENS` is the primary setting going forward.
 
-**Note:** `AI_BRAND_VOICE_TEMPERATURE` defaults to `0.0` because this module is primarily used for auditing and compliance checks. More deterministic ratings are preferred over creative variation, so repeated evaluations of the same content are less likely to drift unless a project intentionally overrides the setting.
+**Note:** `AI_REFINE_TEMPERATURE` defaults to `0.0` because this module is primarily used for auditing and compliance checks. More deterministic ratings are preferred over creative variation, so repeated evaluations of the same content are less likely to drift unless a project intentionally overrides the setting.
 
 ## Error handling
 

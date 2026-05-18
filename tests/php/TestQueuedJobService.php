@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
 use Symbiote\QueuedJobs\Services\QueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;

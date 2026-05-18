@@ -2,7 +2,7 @@
 
 ## Extraction approach
 
-The module implements its own content extraction service and returns a `BrandVoiceExtractedContent` value object containing:
+The module implements its own content extraction service and returns a `RefineExtractedContent` value object containing:
 
 - `content` - the flat text payload sent to the AI for scoring
 - `hash` - the MD5 of that flat payload for stale detection
@@ -66,7 +66,7 @@ This module reads different versions depending on the context:
 
 **Background job → Live content**
 
-The background job evaluates **Live** (published) content. The website owner uses the report to understand how the live site aligns with the brand voice.
+The background job evaluates **Live** (published) content. The website owner uses the report to understand how the live site aligns with the refine.
 
 - Content extraction wraps the read in `Versioned::withVersionedMode()` set to `LIVE`.
 - Pages with no Live record (draft-only pages) are **skipped** by the background job - they're not published, so they're not part of the live site.

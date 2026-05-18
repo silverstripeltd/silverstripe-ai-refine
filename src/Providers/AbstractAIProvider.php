@@ -1,20 +1,20 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Providers;
+namespace SilverstripeLtd\AiRefine\Providers;
 
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
-use SilverstripeLtd\AiBrandVoice\Services\BrandVoicePromptService;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceFullResult;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRatingResult;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Services\RefinePromptService;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRatingResult;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 
 /**
- * Shared provider logic for brand voice evaluation requests.
+ * Shared provider logic for refine evaluation requests.
  */
 abstract class AbstractAIProvider
 {
@@ -26,32 +26,32 @@ abstract class AbstractAIProvider
         'Poor',
     ];
 
-    private BrandVoicePromptService $promptService;
+    private RefinePromptService $promptService;
 
     protected LoggerInterface $logger;
 
     /**
      * Builds the shared provider dependencies or resolves them from the injector.
      */
-    public function __construct(?BrandVoicePromptService $promptService = null, ?LoggerInterface $logger = null)
+    public function __construct(?RefinePromptService $promptService = null, ?LoggerInterface $logger = null)
     {
-        $this->promptService = $promptService ?: Injector::inst()->get(BrandVoicePromptService::class);
+        $this->promptService = $promptService ?: Injector::inst()->get(RefinePromptService::class);
         $this->logger = $logger ?: Injector::inst()->get(LoggerInterface::class);
     }
 
     /**
      * @throws AIProviderException
      */
-    public function evaluateBrandVoice(
+    public function evaluateRefine(
         string $content,
         string $pageTitle,
-        string $brandVoiceDefinition,
+        string $refineDefinition,
         array $rewriteTargets = []
-    ): BrandVoiceFullResult {
+    ): RefineFullResult {
         [$systemPrompt, $userPrompt] = $this->promptService->buildEvaluationPrompts(
             $content,
             $pageTitle,
-            $brandVoiceDefinition,
+            $refineDefinition,
             $rewriteTargets
         );
         return $this->parseFullResult(
@@ -65,10 +65,10 @@ abstract class AbstractAIProvider
      */
     protected function getApiKey(): string
     {
-        if (!Environment::hasEnv('AI_BRAND_VOICE_API_KEY')) {
+        if (!Environment::hasEnv('AI_REFINE_API_KEY')) {
             return '';
         }
-        $apiKey = Environment::getEnv('AI_BRAND_VOICE_API_KEY');
+        $apiKey = Environment::getEnv('AI_REFINE_API_KEY');
         return $apiKey !== false ? trim((string) $apiKey) : '';
     }
 
@@ -77,7 +77,7 @@ abstract class AbstractAIProvider
      */
     protected function getModel(): string
     {
-        $env = Environment::hasEnv('AI_BRAND_VOICE_MODEL') ? Environment::getEnv('AI_BRAND_VOICE_MODEL') : null;
+        $env = Environment::hasEnv('AI_REFINE_MODEL') ? Environment::getEnv('AI_REFINE_MODEL') : null;
         if ($env !== null && $env !== '' && $env !== false) {
             return (string) $env;
         }
@@ -93,8 +93,8 @@ abstract class AbstractAIProvider
      */
     protected function getThinkingLevel(): string
     {
-        $env = Environment::hasEnv('AI_BRAND_VOICE_THINKING_LEVEL')
-            ? Environment::getEnv('AI_BRAND_VOICE_THINKING_LEVEL')
+        $env = Environment::hasEnv('AI_REFINE_THINKING_LEVEL')
+            ? Environment::getEnv('AI_REFINE_THINKING_LEVEL')
             : null;
         return $env !== null && $env !== '' && $env !== false ? (string) $env : 'low';
     }
@@ -104,8 +104,8 @@ abstract class AbstractAIProvider
      */
     protected function getTemperature(): float
     {
-        $env = Environment::hasEnv('AI_BRAND_VOICE_TEMPERATURE')
-            ? Environment::getEnv('AI_BRAND_VOICE_TEMPERATURE')
+        $env = Environment::hasEnv('AI_REFINE_TEMPERATURE')
+            ? Environment::getEnv('AI_REFINE_TEMPERATURE')
             : null;
         return $env !== null && $env !== '' && $env !== false ? (float) $env : 0.0;
     }
@@ -115,12 +115,12 @@ abstract class AbstractAIProvider
      */
     protected function getMaxTokens(): int
     {
-        $env = Environment::hasEnv('AI_BRAND_VOICE_MAX_TOKENS')
-            ? Environment::getEnv('AI_BRAND_VOICE_MAX_TOKENS')
+        $env = Environment::hasEnv('AI_REFINE_MAX_TOKENS')
+            ? Environment::getEnv('AI_REFINE_MAX_TOKENS')
             : null;
         if ($env === null || $env === '' || $env === false) {
-            $env = Environment::hasEnv('AI_BRAND_VOICE_REWRITE_MAX_TOKENS')
-                ? Environment::getEnv('AI_BRAND_VOICE_REWRITE_MAX_TOKENS')
+            $env = Environment::hasEnv('AI_REFINE_REWRITE_MAX_TOKENS')
+                ? Environment::getEnv('AI_REFINE_REWRITE_MAX_TOKENS')
                 : null;
         }
         $value = $env !== null && $env !== '' && $env !== false ? (int) $env : 20000;
@@ -132,8 +132,8 @@ abstract class AbstractAIProvider
      */
     protected function getTimeout(): int
     {
-        $env = Environment::hasEnv('AI_BRAND_VOICE_REQUEST_TIMEOUT')
-            ? Environment::getEnv('AI_BRAND_VOICE_REQUEST_TIMEOUT')
+        $env = Environment::hasEnv('AI_REFINE_REQUEST_TIMEOUT')
+            ? Environment::getEnv('AI_REFINE_REQUEST_TIMEOUT')
             : null;
         if ($env !== null && $env !== '' && $env !== false) {
             $timeout = (int) $env;
@@ -152,7 +152,7 @@ abstract class AbstractAIProvider
         $apiKey = $this->getApiKey();
         if ($apiKey === '') {
             $this->logger->warning('AI provider API key missing', ['provider' => static::class]);
-            throw new AIProviderException('AI_BRAND_VOICE_API_KEY is not configured', true);
+            throw new AIProviderException('AI_REFINE_API_KEY is not configured', true);
         }
         $loggedFailure = false;
         try {
@@ -187,7 +187,7 @@ abstract class AbstractAIProvider
     /**
      * @throws AIProviderException
      */
-    private function parseRatingResult(string $json): BrandVoiceRatingResult
+    private function parseRatingResult(string $json): RefineRatingResult
     {
         $payload = $this->decodeJsonPayload($json);
         $rating = $payload['rating'] ?? null;
@@ -198,13 +198,13 @@ abstract class AbstractAIProvider
         if (!is_string($reasoningSummary) || trim($reasoningSummary) === '') {
             throw new AIProviderException('AI provider response missing reasoningSummary');
         }
-        return new BrandVoiceRatingResult($rating, trim($reasoningSummary));
+        return new RefineRatingResult($rating, trim($reasoningSummary));
     }
 
     /**
      * @throws AIProviderException
      */
-    private function parseFullResult(string $json, array $rewriteTargets = []): BrandVoiceFullResult
+    private function parseFullResult(string $json, array $rewriteTargets = []): RefineFullResult
     {
         $payload = $this->decodeJsonPayload($json);
         $ratingResult = $this->parseRatingResult($json);
@@ -239,7 +239,7 @@ abstract class AbstractAIProvider
                 ));
             }
             $seenTargetKeys[$targetKey] = true;
-            $parsedSuggestions[] = new BrandVoiceSuggestion(
+            $parsedSuggestions[] = new RefineSuggestion(
                 $targetKey,
                 $resolvedTargetType,
                 '',
@@ -248,7 +248,7 @@ abstract class AbstractAIProvider
                 trim($suggestedContent)
             );
         }
-        return new BrandVoiceFullResult(
+        return new RefineFullResult(
             $ratingResult->rating,
             $ratingResult->reasoningSummary,
             $parsedSuggestions
@@ -265,7 +265,7 @@ abstract class AbstractAIProvider
     ): ?string {
         if (is_string($targetType)) {
             $normalisedTargetType = strtolower(trim($targetType));
-            if (BrandVoiceRewriteTarget::isValidTargetType($normalisedTargetType)) {
+            if (RefineRewriteTarget::isValidTargetType($normalisedTargetType)) {
                 return $normalisedTargetType;
             }
         }

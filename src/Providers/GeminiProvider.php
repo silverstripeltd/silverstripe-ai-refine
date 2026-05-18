@@ -1,10 +1,10 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Providers;
+namespace SilverstripeLtd\AiRefine\Providers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
 
 /**
  * Provider integration for Google Gemini.

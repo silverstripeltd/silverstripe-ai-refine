@@ -7,7 +7,7 @@ The module uses a single rewrite-aware prompt for both contexts:
 1. **Background job** - evaluates Live content, persists `rating` and `reasoningSummary`, and discards `suggestions`
 2. **On-demand modal** - evaluates Draft content and displays `rating`, `reasoningSummary`, and `suggestions`
 
-The prompt markdown templates live in the module-root `prompts/` directory and are loaded by `BrandVoicePromptService`.
+The prompt markdown templates live in the module-root `prompts/` directory and are loaded by `RefinePromptService`.
 
 The prompt uses the same structure in both cases: system prompt + user prompt. The user prompt contains the bulk of the instructions - weaker or cheaper models follow instructions more reliably when they appear in the user message rather than the system message.
 
@@ -17,13 +17,13 @@ This module is primarily an auditing tool, so prompt execution is intentionally 
 
 - Provider temperature defaults to `0.0`
 - The goal is to keep report ratings and on-demand ratings as stable as possible for the same content
-- Projects can still override `AI_BRAND_VOICE_TEMPERATURE` if they want different behaviour, but the default is deliberately non-creative
+- Projects can still override `AI_REFINE_TEMPERATURE` if they want different behaviour, but the default is deliberately non-creative
 
 ## Why the rewrite stays in the prompt
 
 Keeping the rewrite request in the prompt is a conscious design choice.
 
-- When the model is asked to rewrite the page, it more reliably notices missing context, weak phrasing, and sections that do not fully meet the brand voice
+- When the model is asked to rewrite the page, it more reliably notices missing context, weak phrasing, and sections that do not fully meet the refine
 - Removing the rewrite section changes the model's evaluation behaviour, not just the shape of the output
 - In practice that makes the score-only variant a weaker audit tool, even if it is cheaper
 - The increased token usage is known and accepted because audit quality matters more than minimising prompt cost in this module
@@ -35,13 +35,13 @@ Keeping the rewrite request in the prompt is a conscious design choice.
 A short role statement used by both flows:
 
 ```
-You are a brand voice compliance evaluator. You will be given a brand voice definition and a piece of website content. Your job is to assess how well the website content aligns with the brand voice definition.
+You are a refine compliance evaluator. You will be given a refine definition and a piece of website content. Your job is to assess how well the website content aligns with the refine definition.
 ```
 
 ### User prompt
 
 Contains:
-1. The brand voice definition (from SiteConfig)
+1. The refine definition (from SiteConfig)
 2. Instructions to evaluate compliance and return a JSON response
 3. Rating scale definition with criteria
 4. Rewrite instructions
@@ -51,12 +51,12 @@ Contains:
 
 Key instructions:
 - **Rating scale** (pick exactly one):
-  - **Excellent** - you cannot find any sentences or phrases that break the brand voice. The tone, word choices, and structure all match.
-  - **Good** - almost all of the content matches the brand voice. You can find 1-2 small issues, such as a single sentence using the wrong tone or a word choice that does not fit.
-  - **Adequate** - most of the content matches the brand voice, but you can find 3-5 issues. For example, some paragraphs match well while others do not.
-  - **NeedsWork** - less than half of the content matches the brand voice. Many sentences use the wrong tone, wrong word choices, or wrong structure.
-  - **Poor** - very little or none of the content matches the brand voice. The content reads as if the brand voice definition was not considered at all.
-- **Reasoning summary:** 2-4 sentences explaining the rating. Mention specific strengths and weaknesses. Reference the brand voice definition where relevant.
+  - **Excellent** - you cannot find any sentences or phrases that break the refine. The tone, word choices, and structure all match.
+  - **Good** - almost all of the content matches the refine. You can find 1-2 small issues, such as a single sentence using the wrong tone or a word choice that does not fit.
+  - **Adequate** - most of the content matches the refine, but you can find 3-5 issues. For example, some paragraphs match well while others do not.
+  - **NeedsWork** - less than half of the content matches the refine. Many sentences use the wrong tone, wrong word choices, or wrong structure.
+  - **Poor** - very little or none of the content matches the refine. The content reads as if the refine definition was not considered at all.
+- **Reasoning summary:** 2-4 sentences explaining the rating. Mention specific strengths and weaknesses. Reference the refine definition where relevant.
 - **Suggestions:** return one suggestion object for each rewrite target and keep them in the same order as the supplied target list
 - Each suggestion object must include the exact `targetKey` and `targetType` from the matching rewrite target plus `suggestedContent`
 - Preserve meaning and information
@@ -98,8 +98,8 @@ The provider parses the AI response as JSON:
 
 | JSON key | Maps to |
 |----------|---------|
-| `rating` | Persisted to `BrandVoiceAnalysis.Rating` in the background job and displayed in the modal |
-| `reasoningSummary` | Persisted to `BrandVoiceAnalysis.ReasoningSummary` in the background job and displayed in the modal |
+| `rating` | Persisted to `RefineAnalysis.Rating` in the background job and displayed in the modal |
+| `reasoningSummary` | Persisted to `RefineAnalysis.ReasoningSummary` in the background job and displayed in the modal |
 | `suggestions` | Discarded by the background job and displayed as structured review cards in the modal |
 
 If any required key is missing from the response, the provider throws `AIProviderException`. The parser requires every suggestion to include a non-empty `targetKey`, a valid `targetType`, and non-empty `suggestedContent`. The evaluation service then checks that every server-known rewrite target was returned exactly once and rejects missing, unexpected, or duplicate targets.
@@ -109,7 +109,7 @@ If any required key is missing from the response, the provider throws `AIProvide
 The prompt service provides an extension hook for project-level customisation:
 
 ```php
-$this->extend('updateBrandVoicePrompts', $systemPrompt, $userPrompt);
+$this->extend('updateRefinePrompts', $systemPrompt, $userPrompt);
 ```
 
 This allows projects to modify prompts (e.g. add industry-specific evaluation criteria). The extension receives both prompts by reference.

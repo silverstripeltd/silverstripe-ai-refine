@@ -1,6 +1,6 @@
 {
-    "name": "silverstripeltd/ai-brand-voice",
-    "description": "AI brand voice module for Silverstripe CMS",
+    "name": "silverstripeltd/ai-refine",
+    "description": "AI refine module for Silverstripe CMS",
     "type": "silverstripe-vendormodule",
     "require": {
         "php": "^8.3",
@@ -17,12 +17,12 @@
     },
     "autoload": {
         "psr-4": {
-            "SilverstripeLtd\\AiBrandVoice\\": "src/"
+            "SilverstripeLtd\\AiRefine\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "SilverstripeLtd\\AiBrandVoice\\Tests\\": "tests/php/"
+            "SilverstripeLtd\\AiRefine\\Tests\\": "tests/php/"
         }
     },
     "scripts": {

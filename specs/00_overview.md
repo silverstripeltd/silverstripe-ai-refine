@@ -1,14 +1,14 @@
 # System Overview
 
-One-page summary of the AI brand voice module architecture. Read this first, then dive into individual specs.
+One-page summary of the AI refine module architecture. Read this first, then dive into individual specs.
 
 ## What it does
 
-Lets CMS users define a corporate content style guide (brand voice) and uses AI to evaluate page content against it. Results are surfaced in the CMS via a report (for website owners) and an on-demand check (for content editors). This is primarily an **evaluation** module - it assesses existing content, returns structured rewrite suggestions, and can write reviewed suggestions back to **Draft** content on the server. It never publishes content automatically.
+Lets CMS users define a corporate content style guide (refine) and uses AI to evaluate page content against it. Results are surfaced in the CMS via a report (for website owners) and an on-demand check (for content editors). This is primarily an **evaluation** module - it assesses existing content, returns structured rewrite suggestions, and can write reviewed suggestions back to **Draft** content on the server. It never publishes content automatically.
 
 ## Two entry points
 
-1. **CMS report** (website owner) - shows all pages with their brand voice compliance rating, pre-computed by a background job against **Live** content. The stored rating reflects published content, while the report's "Analysis status" compares that saved result against the page's current CMS content so unpublished draft changes can still mark a row "Out of date". Gives a high-level view of how aligned the site is with the defined brand voice.
+1. **CMS report** (website owner) - shows all pages with their refine compliance rating, pre-computed by a background job against **Live** content. The stored rating reflects published content, while the report's "Analysis status" compares that saved result against the page's current CMS content so unpublished draft changes can still mark a row "Out of date". Gives a high-level view of how aligned the site is with the defined refine.
 2. **On-demand check** (content editor) - button on the page edit form opens a modal. Editor clicks a button to trigger an AI evaluation of their **Draft** content. The modal shows rating, reasoning, and per-target suggestions for the page title, page content, and supported text or HTML fields on Elemental blocks. Results are cached on the Entwine instance for the editing session, not persisted to DB, and selected suggestions can be applied back to Draft records before the CMS reloads.
 
 ## Architecture
@@ -17,7 +17,7 @@ Lets CMS users define a corporate content style guide (brand voice) and uses AI 
 ┌─────────────────────────────────────────────────────────────┐
 │ SiteConfig                                                  │
 │                                                             │
-│  Brand Voice Definition (free-text field)                   │
+│  Refine Definition (free-text field)                   │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                ┌───────────────┴───────────────┐
@@ -48,7 +48,7 @@ Lets CMS users define a corporate content style guide (brand voice) and uses AI 
 ┌──────────────────────────────────────────────────────────────┐
 │ Storage                                                      │
 │                                                              │
-│ BrandVoiceAnalysis DataObject (specs/01)                     │
+│ RefineAnalysis DataObject (specs/01)                     │
 │  → Polymorphic has_one to parent (SiteTree)                  │
 │  → Rating, ReasoningSummary, ContentHash, AnalysedAt         │
 │  → Background job results only (on-demand is ephemeral)      │
@@ -65,7 +65,7 @@ Lets CMS users define a corporate content style guide (brand voice) and uses AI 
 | # | Spec | What it covers |
 |---|------|---------------|
 | 00 | This file | System overview and architecture |
-| 01 | `data-architecture` | BrandVoiceAnalysis DataObject, SiteConfig brand voice field, polymorphic relationship |
+| 01 | `data-architecture` | RefineAnalysis DataObject, SiteConfig refine field, polymorphic relationship |
 | 02 | `content-extraction` | Flat evaluation extraction, structured rewrite targets, Live vs Draft per context, content hashing |
 | 03 | `ai-providers` | Shared provider abstraction, env vars, result objects |
 | 04 | `prompts` | Shared rewrite-aware prompt, output format, audit rationale |

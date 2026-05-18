@@ -1,13 +1,13 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Services;
+namespace SilverstripeLtd\AiRefine\Services;
 
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use DNADesign\Elemental\Models\BaseElement;
 use DNADesign\Elemental\Models\ElementContent;
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceExtractedContent;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineExtractedContent;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
  use SilverStripe\Core\Convert;
  use SilverStripe\Core\Extensible;
  use SilverStripe\Core\Injector\Injector;
@@ -28,7 +28,7 @@ class ContentExtractionService
     /**
      * Extracts the current draft payload and rewrite targets for an editor check.
      */
-    public function extractForDraftCheck(DataObject $record): BrandVoiceExtractedContent
+    public function extractForDraftCheck(DataObject $record): RefineExtractedContent
     {
         $resolvedRecord = $this->resolveRecordForMode($record, self::READ_MODE_DRAFT) ?: $record;
         return $this->buildExtractedContent($resolvedRecord, self::READ_MODE_DRAFT, true);
@@ -37,7 +37,7 @@ class ContentExtractionService
     /**
      * Extracts the published payload for background analysis, or null when no Live record exists.
      */
-    public function extractForLiveAnalysis(DataObject $record): ?BrandVoiceExtractedContent
+    public function extractForLiveAnalysis(DataObject $record): ?RefineExtractedContent
     {
         $resolvedRecord = $this->resolveRecordForMode($record, self::READ_MODE_LIVE);
         if (!$resolvedRecord) {
@@ -61,7 +61,7 @@ class ContentExtractionService
         DataObject $record,
         string $mode,
         bool $filterInteractiveElementTargets
-    ): BrandVoiceExtractedContent {
+    ): RefineExtractedContent {
         $parts = [];
         $title = $record->hasField('Title') ? trim((string) $record->Title) : '';
         if ($title !== '') {
@@ -76,7 +76,7 @@ class ContentExtractionService
         $extracted = trim($extracted);
         $rewriteTargets = $this->buildRewriteTargets($record, $filterInteractiveElementTargets);
         $this->extend('updateExtractedRewriteTargets', $rewriteTargets, $record, $mode);
-        return new BrandVoiceExtractedContent(
+        return new RefineExtractedContent(
             $extracted,
             $this->computeHash($extracted),
             $mode,
@@ -107,7 +107,7 @@ class ContentExtractionService
         try {
             return trim((string) $record->getElementsForSearch());
         } catch (MissingTemplateException $exception) {
-            $this->getLogger()->warning('Brand Voice extraction fell back to Elemental CMS search content', [
+            $this->getLogger()->warning('Refine extraction fell back to Elemental CMS search content', [
                 'recordClass' => $record->ClassName,
                 'recordID' => $record->exists() ? (int) $record->ID : null,
                 'exceptionClass' => $exception::class,
@@ -134,7 +134,7 @@ class ContentExtractionService
             $targets[] = $this->createRewriteTarget(
                 $record,
                 'page:title',
-                BrandVoiceRewriteTarget::TYPE_PAGE_TITLE,
+                RefineRewriteTarget::TYPE_PAGE_TITLE,
                 'Title',
                 $recordId,
                 $title
@@ -152,7 +152,7 @@ class ContentExtractionService
                 $targets[] = $this->createRewriteTarget(
                     $record,
                     'page:content',
-                    BrandVoiceRewriteTarget::TYPE_PAGE_CONTENT,
+                    RefineRewriteTarget::TYPE_PAGE_CONTENT,
                     'Content',
                     $recordId,
                     $content,
@@ -224,7 +224,7 @@ class ContentExtractionService
                 $fieldName,
                 (int) $element->ID,
                 $content,
-                $targetType === BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML ? trim($rawContent) : ''
+                $targetType === RefineRewriteTarget::TYPE_ELEMENT_HTML ? trim($rawContent) : ''
             );
         }
         return $targets;
@@ -241,8 +241,8 @@ class ContentExtractionService
         ?int $targetId,
         string $sourceContent,
         string $diffSourceContent = ''
-    ): BrandVoiceRewriteTarget {
-        return new BrandVoiceRewriteTarget(
+    ): RefineRewriteTarget {
+        return new RefineRewriteTarget(
             $targetKey,
             $targetType,
             $fieldName,
@@ -297,11 +297,11 @@ class ContentExtractionService
         $lcType = strtolower(strtok($databaseFieldType, '(') ?: $databaseFieldType);
 
         if (str_contains($lcType, 'html')) {
-            return BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML;
+            return RefineRewriteTarget::TYPE_ELEMENT_HTML;
         }
 
         if (str_contains($lcType, 'varchar') || str_contains($lcType, 'text')) {
-            return BrandVoiceRewriteTarget::TYPE_ELEMENT_TEXT;
+            return RefineRewriteTarget::TYPE_ELEMENT_TEXT;
         }
         return null;
     }
@@ -311,7 +311,7 @@ class ContentExtractionService
      */
     private function normaliseElementFieldContent(string $content, string $targetType): string
     {
-        if ($targetType === BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML) {
+        if ($targetType === RefineRewriteTarget::TYPE_ELEMENT_HTML) {
             return $this->normaliseRewriteSourceContent(Convert::html2raw($content));
         }
         return $this->normaliseRewriteSourceContent($content);
@@ -322,7 +322,7 @@ class ContentExtractionService
      */
     private function buildElementTargetKey(BaseElement $element, string $fieldName, string $targetType): string
     {
-        if ($targetType === BrandVoiceRewriteTarget::TYPE_ELEMENT_HTML
+        if ($targetType === RefineRewriteTarget::TYPE_ELEMENT_HTML
             && $element instanceof ElementContent
             && $fieldName === 'HTML') {
             return sprintf('element:%d:html', $element->ID);

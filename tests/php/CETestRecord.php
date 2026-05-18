@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;

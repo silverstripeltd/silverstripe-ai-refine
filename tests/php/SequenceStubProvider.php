@@ -1,11 +1,11 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
-use SilverstripeLtd\AiBrandVoice\Providers\AbstractAIProvider;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceFullResult;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Providers\AbstractAIProvider;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 
 /**
  * Provider stub that returns a queued sequence of results or exceptions.
@@ -15,7 +15,7 @@ class SequenceStubProvider extends AbstractAIProvider
     public int $evaluationCallCount = 0;
 
     /**
-     * @var list<BrandVoiceFullResult|AIProviderException>
+     * @var list<RefineFullResult|AIProviderException>
      */
     private array $responses;
 
@@ -30,22 +30,22 @@ class SequenceStubProvider extends AbstractAIProvider
     /**
      * Returns the next queued response and increments the evaluation counter.
      */
-    public function evaluateBrandVoice(
+    public function evaluateRefine(
         string $content,
         string $pageTitle,
-        string $brandVoiceDefinition,
+        string $refineDefinition,
         array $rewriteTargets = []
-    ): BrandVoiceFullResult {
+    ): RefineFullResult {
         $this->evaluationCallCount++;
         $response = array_shift($this->responses);
 
         if ($response instanceof AIProviderException) {
             throw $response;
         }
-        return $response instanceof BrandVoiceFullResult
+        return $response instanceof RefineFullResult
             ? $response
-            : new BrandVoiceFullResult('Good', 'Stub summary', [
-                new BrandVoiceSuggestion('page:title', 'page_title', '', null, '', 'Updated title'),
+            : new RefineFullResult('Good', 'Stub summary', [
+                new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated title'),
             ]);
     }
 

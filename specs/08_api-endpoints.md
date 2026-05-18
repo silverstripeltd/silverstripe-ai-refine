@@ -2,24 +2,24 @@
 
 ## Overview
 
-Server-side endpoints for the CMS modal's on-demand brand voice check and Draft apply workflow. Implemented as a Silverstripe admin controller.
+Server-side endpoints for the CMS modal's on-demand refine check and Draft apply workflow. Implemented as a Silverstripe admin controller.
 
 ## Controller
 
-- Class: `BrandVoiceController` (namespace: `SilverstripeLtd\AiBrandVoice\Controllers\BrandVoiceController`)
+- Class: `RefineController` (namespace: `SilverstripeLtd\AiRefine\Controllers\RefineController`)
 - Registered as an admin route using the standard Silverstripe admin controller pattern
 
 ## Endpoints
 
-### GET `/admin/ai-brand-voice/schema/{ID}`
+### GET `/admin/ai-refine/schema/{ID}`
 
-Fetch the FormSchema for the brand voice modal.
+Fetch the FormSchema for the refine modal.
 
 - **ID:** SiteTree page ID
 - **Auth:** CMS session
 - **Behaviour:**
   1. Validate the page exists and user has `canEdit()` permission.
-  2. Return the FormSchema JSON describing the modal layout plus schema meta for labels, messages, `checkUrl`, `applyUrl`, and client state such as `brandVoiceConfigured` and `supportsApply`.
+  2. Return the FormSchema JSON describing the modal layout plus schema meta for labels, messages, `checkUrl`, `applyUrl`, and client state such as `refineConfigured` and `supportsApply`.
 - **Response:** Standard Silverstripe FormSchema response
 - **Error responses:**
   - 403 - user cannot edit the page
@@ -27,20 +27,20 @@ Fetch the FormSchema for the brand voice modal.
 
 The Entwine adapter fetches this schema when mounting the React component. The schema defines the modal metadata server-side so the React component remains a thin renderer.
 
-### POST `/admin/ai-brand-voice/check/{ID}`
+### POST `/admin/ai-refine/check/{ID}`
 
-Trigger an on-demand brand voice check for a page.
+Trigger an on-demand refine check for a page.
 
 - **ID:** SiteTree page ID
 - **Auth:** CMS session + CSRF token
 - **Behaviour:**
   1. Validate the page exists and user has `canEdit()` permission.
-  2. Check that `BrandVoiceDefinition` is set on SiteConfig and return an error if empty.
+  2. Check that `RefineDefinition` is set on SiteConfig and return an error if empty.
   3. Extract **Draft** content from the page (see `specs/02_content-extraction.md`).
   4. If content is empty, return an error response.
   5. Call the AI provider with the **rating + rewrite** prompt (`specs/04_prompts.md`), including the server-generated rewrite target list.
   6. Resolve the provider response back onto the known Draft rewrite targets.
-  7. Return the result as JSON without persisting it to `BrandVoiceAnalysis`. If the rating is `Excellent`, strip all suggestions before returning so the modal shows the fully-aligned path without contradictory rewrites.
+  7. Return the result as JSON without persisting it to `RefineAnalysis`. If the rating is `Excellent`, strip all suggestions before returning so the modal shows the fully-aligned path without contradictory rewrites.
 - **Response:**
   ```json
   {
@@ -76,14 +76,14 @@ Trigger an on-demand brand voice check for a page.
   }
   ```
 - **Error responses:**
-  - 400 - missing or invalid parameters, empty brand voice definition, or empty page content
+  - 400 - missing or invalid parameters, empty refine definition, or empty page content
   - 403 - user cannot edit the page or CSRF token invalid
   - 404 - page not found
   - 500 - AI provider failure, with provider detail in development and a generic message in production
 
-### POST `/admin/ai-brand-voice/apply/{ID}`
+### POST `/admin/ai-refine/apply/{ID}`
 
-Apply selected brand voice suggestions to Draft content for a page.
+Apply selected refine suggestions to Draft content for a page.
 
 - **ID:** SiteTree page ID
 - **Auth:** CMS session + CSRF token

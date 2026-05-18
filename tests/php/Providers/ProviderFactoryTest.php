@@ -1,13 +1,13 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests\Providers;
+namespace SilverstripeLtd\AiRefine\Tests\Providers;
 
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
-use SilverstripeLtd\AiBrandVoice\Providers\AnthropicProvider;
-use SilverstripeLtd\AiBrandVoice\Providers\GeminiProvider;
-use SilverstripeLtd\AiBrandVoice\Providers\OpenAIProvider;
-use SilverstripeLtd\AiBrandVoice\Providers\ProviderFactory;
-use SilverstripeLtd\AiBrandVoice\Tests\StubProvider;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Providers\AnthropicProvider;
+use SilverstripeLtd\AiRefine\Providers\GeminiProvider;
+use SilverstripeLtd\AiRefine\Providers\OpenAIProvider;
+use SilverstripeLtd\AiRefine\Providers\ProviderFactory;
+use SilverstripeLtd\AiRefine\Tests\StubProvider;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
@@ -44,7 +44,7 @@ class ProviderFactoryTest extends SapphireTest
      */
     protected function tearDown(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_PROVIDER', null);
+        Environment::setEnv('AI_REFINE_PROVIDER', null);
 
         parent::tearDown();
     }
@@ -54,7 +54,7 @@ class ProviderFactoryTest extends SapphireTest
      */
     public function testDefaultsToGeminiWhenEnvEmpty(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_PROVIDER', '');
+        Environment::setEnv('AI_REFINE_PROVIDER', '');
         $factory = new ProviderFactory();
 
         $this->assertSame($this->geminiProvider, $factory->getProvider());
@@ -65,7 +65,7 @@ class ProviderFactoryTest extends SapphireTest
      */
     public function testSelectsOpenAiProvider(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_PROVIDER', 'openai');
+        Environment::setEnv('AI_REFINE_PROVIDER', 'openai');
         $factory = new ProviderFactory();
 
         $this->assertSame($this->openAiProvider, $factory->getProvider());
@@ -76,7 +76,7 @@ class ProviderFactoryTest extends SapphireTest
      */
     public function testSelectsAnthropicProvider(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_PROVIDER', 'anthropic');
+        Environment::setEnv('AI_REFINE_PROVIDER', 'anthropic');
         $factory = new ProviderFactory();
 
         $this->assertSame($this->anthropicProvider, $factory->getProvider());
@@ -87,7 +87,7 @@ class ProviderFactoryTest extends SapphireTest
      */
     public function testUnknownProviderThrowsFatalProviderException(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_PROVIDER', 'unknown');
+        Environment::setEnv('AI_REFINE_PROVIDER', 'unknown');
         $factory = new ProviderFactory();
 
         try {

@@ -1,9 +1,9 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
-use SilverstripeLtd\AiBrandVoice\Providers\AbstractAIProvider;
-use SilverstripeLtd\AiBrandVoice\Providers\ProviderFactory;
+use SilverstripeLtd\AiRefine\Providers\AbstractAIProvider;
+use SilverstripeLtd\AiRefine\Providers\ProviderFactory;
 
 /**
  * Provider factory that always returns the supplied provider.

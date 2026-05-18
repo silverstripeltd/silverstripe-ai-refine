@@ -3,10 +3,10 @@
 import registerComponents from './registerComponents';
 
 /**
- * Boots the Brand Voice injector registrations once the CMS shell is ready.
+ * Boots the Refine injector registrations once the CMS shell is ready.
  */
-const bootBrandVoiceUi = () => {
+const bootRefineUi = () => {
   registerComponents();
 };
 
-document.addEventListener('DOMContentLoaded', bootBrandVoiceUi);
+document.addEventListener('DOMContentLoaded', bootRefineUi);

@@ -1,8 +1,8 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests\Exceptions;
+namespace SilverstripeLtd\AiRefine\Tests\Exceptions;
 
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
 use SilverStripe\Dev\SapphireTest;
 
 /**

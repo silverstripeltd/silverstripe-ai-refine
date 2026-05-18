@@ -12,7 +12,7 @@ A "Tone" button in the CMS preview toolbar, rendered immediately to the left of 
 
 - **Shown** when the user has `canEdit()` permission on the page
 - **Hidden** when the page does not yet exist or the user cannot edit it
-- If `BrandVoiceDefinition` is empty, the button still opens the modal so the editor sees the missing-configuration guidance instead of a silently missing action
+- If `RefineDefinition` is empty, the button still opens the modal so the editor sees the missing-configuration guidance instead of a silently missing action
 
 ## Modal behaviour
 
@@ -29,18 +29,18 @@ When the edit form is dirty, the modal shows an informational warning banner:
 
 > "This check evaluates your saved draft content. Save the page to draft before checking if you have unsaved changes."
 
-The modal does not show this banner while the form is clean. When it does appear, it doubles as the dirty-state warning that explains Brand Voice reads the last saved Draft from the server rather than unsaved form edits.
+The modal does not show this banner while the form is clean. When it does appear, it doubles as the dirty-state warning that explains Refine reads the last saved Draft from the server rather than unsaved form edits.
 
 ### Empty state
 
 When no previous result is cached:
 
-- Message: "Click the button below to check this page's content against your brand voice."
-- A "Rewrite for Brand Voice" button is prominently displayed and uses the CMS info button style
+- Message: "Click the button below to check this page's content against your refine."
+- A "Rewrite for Refine" button is prominently displayed and uses the CMS info button style
 
 ### Running a check
 
-1. Editor clicks "Rewrite for Brand Voice" or "Regenerate" if a previous result exists.
+1. Editor clicks "Rewrite for Refine" or "Regenerate" if a previous result exists.
 2. Loading spinner shown while the XHR is in progress.
 3. Button disabled during the request.
 4. Check is also disabled while the page form is dirty, because the request evaluates saved Draft content rather than unsaved inline edits.
@@ -61,7 +61,7 @@ Top to bottom:
    - Checkbox to opt that suggestion into the apply request
 5. **Apply Changes button** - applies the selected suggestions only. It is disabled when there is no result, when no suggestion is selected, while requests are in flight, or while the page form is dirty. This button uses the CMS info button style.
 
-If the AI returns zero suggestions for an `Excellent` result, the modal shows a success banner ("Your content fully aligns with the brand voice. No changes needed.") and hides the rewrite section entirely. Other zero-suggestion results still show the rewrite section with a "No rewrite suggestions were returned for this page." message.
+If the AI returns zero suggestions for an `Excellent` result, the modal shows a success banner ("Your content fully aligns with the refine. No changes needed.") and hides the rewrite section entirely. Other zero-suggestion results still show the rewrite section with a "No rewrite suggestions were returned for this page." message.
 
 ## Result lifecycle
 
@@ -70,27 +70,27 @@ If the AI returns zero suggestions for an `Excellent` result, the modal shows a 
 - The cached result shape is `{rating, ratingLabel, reasoningSummary, suggestions}`.
 - Results are **lost** when the editor navigates to a different page, because Entwine reinitialises, or when the CMS reloads.
 - The cached result is **flushed when the page edit form becomes dirty**, and it is also discarded on the next open if a manual save or publish changed the saved Draft hash before the browser reloaded.
-- The on-demand check does **not** update the `BrandVoiceAnalysis` record. That remains the background job's domain.
+- The on-demand check does **not** update the `RefineAnalysis` record. That remains the background job's domain.
 
 ## Toast notifications
 
-- **Check success** - "Brand voice check complete"
+- **Check success** - "Refine check complete"
 - **Check failure** - error toast with message (development: provider error detail; production: generic message)
-- **Apply success** - "Brand voice suggestions applied to draft content"
+- **Apply success** - "Refine suggestions applied to draft content"
 - **Apply partial** - "Some suggestions could not be applied"
-- **Apply failure** - "Unable to apply brand voice suggestions"
+- **Apply failure** - "Unable to apply refine suggestions"
 - **No content** - "This page has no content to evaluate" when extracted content is empty
 
 ## Loading states
 
 - **Schema load in progress:** A loading indicator is shown while the modal fetches its schema metadata on open, and action buttons remain disabled until that request completes.
-- **Check in progress:** Loading spinner replaces the result area. "Rewrite for Brand Voice" and "Regenerate" are disabled.
+- **Check in progress:** Loading spinner replaces the result area. "Rewrite for Refine" and "Regenerate" are disabled.
 - **Apply in progress:** The same loading state is shown with "Applying suggestions..." while the Draft write request is in flight.
 
 ## Dirty-state protection
 
 - The modal clears any cached result and shows the saved-draft warning banner while the page edit form has Silverstripe admin's `.changed` class.
-- Both **Rewrite for Brand Voice** and **Apply Changes** are disabled in this state.
+- Both **Rewrite for Refine** and **Apply Changes** are disabled in this state.
 - The warning copy is the same saved-draft notice shown above, rather than a separate dedicated dirty-state message.
 
 ## Apply behaviour

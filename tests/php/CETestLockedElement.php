@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
 use DNADesign\Elemental\Models\ElementContent;
 use SilverStripe\Dev\TestOnly;

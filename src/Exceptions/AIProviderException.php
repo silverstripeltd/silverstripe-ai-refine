@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Exceptions;
+namespace SilverstripeLtd\AiRefine\Exceptions;
 
 use RuntimeException;
 use Throwable;

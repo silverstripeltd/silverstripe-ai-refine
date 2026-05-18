@@ -2,11 +2,11 @@
 
 ## Overview
 
-A `QueuedJob` subclass that bulk-evaluates brand voice compliance for pages. Uses the `symbiote/silverstripe-queuedjobs` module.
+A `QueuedJob` subclass that bulk-evaluates refine compliance for pages. Uses the `symbiote/silverstripe-queuedjobs` module.
 
 ## Job class
 
-- Class: `EvaluateBrandVoiceJob` (namespace: `SilverstripeLtd\AiBrandVoice\Jobs\EvaluateBrandVoiceJob`)
+- Class: `EvaluateRefineJob` (namespace: `SilverstripeLtd\AiRefine\Jobs\EvaluateRefineJob`)
 - Extends: `AbstractQueuedJob`
 - Type: `QueuedJob::QUEUED`
 
@@ -16,17 +16,17 @@ The job is **not** automatically scheduled. An administrator must manually creat
 
 ## Pre-flight check
 
-Before processing any pages, the job checks if `BrandVoiceDefinition` is set on `SiteConfig`. If empty, the job logs "No brand voice definition configured - skipping all pages" and completes without processing.
+Before processing any pages, the job checks if `RefineDefinition` is set on `SiteConfig`. If empty, the job logs "No refine definition configured - skipping all pages" and completes without processing.
 
 ## Pages targeted
 
 The job processes pages that meet either condition:
 
-1. **Not analysed:** Page has no `BrandVoiceAnalysis` record, or `AnalysedAt` is null
-2. **Stale:** Page has `BrandVoiceAnalysis` but the content hash no longer matches (content has changed since last analysis)
+1. **Not analysed:** Page has no `RefineAnalysis` record, or `AnalysedAt` is null
+2. **Stale:** Page has `RefineAnalysis` but the content hash no longer matches (content has changed since last analysis)
 
 Pages are processed in `SiteTree.ID` order (deterministic, simple).
-The job caps the number of pages per run via `AI_BRAND_VOICE_JOB_BATCH_SIZE` (default: 50).
+The job caps the number of pages per run via `AI_REFINE_JOB_BATCH_SIZE` (default: 50).
 
 ## Content source
 
@@ -38,9 +38,9 @@ For each page:
 
 1. Read Live content via the content extraction pipeline (`specs/02_content-extraction.md`). Skip if the page has no Live record.
 2. Compute MD5 hash of extracted content. Compare to stored `ContentHash`. Skip if unchanged (analysis is up-to-date).
-3. Check if content is non-empty. If empty, store on the `BrandVoiceAnalysis` record: `GenerationNote` = "Insufficient content", `ContentHash` = MD5 of the empty string, `AnalysedAt` = current datetime, clear any previous `Rating` and `ReasoningSummary`. Skip to next page (do not call the AI provider). This ensures empty pages are treated as analysed and not retried every cycle - they will only be re-evaluated when their content changes (hash changes).
-4. Call the AI provider with the shared **rewrite-aware** prompt (`specs/04_prompts.md`), passing the extracted content, page title, brand voice definition from SiteConfig, and any structured rewrite targets. Persist `rating` and `reasoningSummary`, and discard `suggestions`.
-5. Store results on the `BrandVoiceAnalysis` record:
+3. Check if content is non-empty. If empty, store on the `RefineAnalysis` record: `GenerationNote` = "Insufficient content", `ContentHash` = MD5 of the empty string, `AnalysedAt` = current datetime, clear any previous `Rating` and `ReasoningSummary`. Skip to next page (do not call the AI provider). This ensures empty pages are treated as analysed and not retried every cycle - they will only be re-evaluated when their content changes (hash changes).
+4. Call the AI provider with the shared **rewrite-aware** prompt (`specs/04_prompts.md`), passing the extracted content, page title, refine definition from SiteConfig, and any structured rewrite targets. Persist `rating` and `reasoningSummary`, and discard `suggestions`.
+5. Store results on the `RefineAnalysis` record:
    - `Rating` - the compliance rating
    - `ReasoningSummary` - AI's explanation
    - `ContentHash` - MD5 of the Live content just evaluated
@@ -52,7 +52,7 @@ This is an intentional tradeoff. Even though the background job does not store r
 
 ## Rate limiting
 
-- Configurable delay between API calls: `AI_BRAND_VOICE_RATE_LIMIT_DELAY` environment variable (default: 6 seconds)
+- Configurable delay between API calls: `AI_REFINE_RATE_LIMIT_DELAY` environment variable (default: 6 seconds)
 
 ## Error handling
 
@@ -68,7 +68,7 @@ This is an intentional tradeoff. Even though the background job does not store r
 
 ## Re-queue behaviour
 
-At the end of a run, the job re-queues a fresh instance scheduled for a later run (default 8 hours via `AI_BRAND_VOICE_JOB_REQUEUE_DELAY`). This keeps periodic re-evaluation available without manual re-creation.
+At the end of a run, the job re-queues a fresh instance scheduled for a later run (default 8 hours via `AI_REFINE_JOB_REQUEUE_DELAY`). This keeps periodic re-evaluation available without manual re-creation.
 
 ## Concurrency
 

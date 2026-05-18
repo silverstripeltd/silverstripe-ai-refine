@@ -1,4 +1,4 @@
-# AI brand voice module for Silverstripe CMS
+# AI Refine module for Silverstripe CMS
 
 A Silverstripe CMS 6 module that lets users define a corporate content style guide and uses AI to evaluate whether page content adheres to it. The module analyses each page against the style guide and surfaces compliance status and recommendations in the CMS.
 
@@ -13,12 +13,12 @@ This module is hosted on a private GitHub repository and is not listed on Packag
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@github.com:silverstripeltd/silverstripe-ai-brand-voice.git"
+            "url": "git@github.com:silverstripeltd/silverstripe-ai-refine.git"
         }
     ],
     // ...
     "require": {
-        "silverstripeltd/ai-brand-voice": "dev-main"
+        "silverstripeltd/ai-refine": "dev-main"
     }
 }
 ```
@@ -31,7 +31,7 @@ When working on this module, AI tools (e.g. Claude Code, Copilot) should be run 
 cd path/to/project
 
 if [ -f CLAUDE.md ] || [ -L CLAUDE.md ]; then rm -f CLAUDE.md; fi
-ln -s vendor/silverstripeltd/ai-brand-voice/CLAUDE.md CLAUDE.md
+ln -s vendor/silverstripeltd/ai-refine/CLAUDE.md CLAUDE.md
 ```
 
 `CLAUDE.md` contains the project identity, hard constraints, directory structure, and the module-specific testing, spec-editing, and command conventions in one place so the AI does not have to discover separate skill files at runtime.
@@ -43,13 +43,13 @@ Note that `CLAUDE.md` contains instructions for a specific Docker setup - you wi
 From the project root:
 
 - PHP unit tests:
-  - `ssh webserver "cd /var/www && rm -rf /tmp/pu-cache && mkdir -p /tmp/pu-cache && SS_TEMP_PATH=/tmp/pu-cache nice -n 19 ionice -c 3 taskset -c 0 vendor/bin/phpunit vendor/silverstripeltd/ai-brand-voice/tests/ --fail-on-warning"`
+  - `ssh webserver "cd /var/www && rm -rf /tmp/pu-cache && mkdir -p /tmp/pu-cache && SS_TEMP_PATH=/tmp/pu-cache nice -n 19 ionice -c 3 taskset -c 0 vendor/bin/phpunit vendor/silverstripeltd/ai-refine/tests/ --fail-on-warning"`
 - PHP linting:
-  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice && nice -n 19 ionice -c 3 taskset -c 0 ../../bin/phpcs --ignore=*/thirdparty/*,*/node_modules/* --extensions=php ."`
+  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine && nice -n 19 ionice -c 3 taskset -c 0 ../../bin/phpcs --ignore=*/thirdparty/*,*/node_modules/* --extensions=php ."`
 - JS linting:
-  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn lint"`
+  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn lint"`
 - JS build:
-  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice/client && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn install && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn build"`
+  - `ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine/client && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn install && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn build"`
 
 ## Configuration
 
@@ -60,8 +60,8 @@ All configuration is via environment variables (e.g. in your webserver env or `.
 Set the AI provider and API key. Gemini, OpenAI, and Anthropic are supported out of the box. Custom providers can be added by extending `AbstractAIProvider`.
 
 ```bash
-AI_BRAND_VOICE_PROVIDER=gemini              # gemini (default), openai, or anthropic
-AI_BRAND_VOICE_API_KEY=your-api-key         # API key for the chosen provider
+AI_REFINE_PROVIDER=gemini              # gemini (default), openai, or anthropic
+AI_REFINE_API_KEY=your-api-key         # API key for the chosen provider
 ```
 
 ### Model
@@ -69,25 +69,25 @@ AI_BRAND_VOICE_API_KEY=your-api-key         # API key for the chosen provider
 Control which model is used and how it generates responses. All optional - sensible defaults are used if omitted.
 
 ```bash
-AI_BRAND_VOICE_MODEL=gemini-3.1-flash-lite  # Model identifier (provider-specific)
-AI_BRAND_VOICE_THINKING_LEVEL=low           # Thinking effort: none, low, medium, or high
-AI_BRAND_VOICE_TEMPERATURE=0.0              # Sampling temperature (0.0–1.0)
-AI_BRAND_VOICE_MAX_TOKENS=20000             # Max tokens in AI response
-AI_BRAND_VOICE_REQUEST_TIMEOUT=15           # Timeout per AI request in seconds
+AI_REFINE_MODEL=gemini-3.1-flash-lite  # Model identifier (provider-specific)
+AI_REFINE_THINKING_LEVEL=low           # Thinking effort: none, low, medium, or high
+AI_REFINE_TEMPERATURE=0.0              # Sampling temperature (0.0–1.0)
+AI_REFINE_MAX_TOKENS=20000             # Max tokens in AI response
+AI_REFINE_REQUEST_TIMEOUT=15           # Timeout per AI request in seconds
 ```
 
-`AI_BRAND_VOICE_TEMPERATURE` defaults to `0.0` on purpose. This module is primarily an auditing and compliance tool, so repeatable ratings are preferred over creative variation or reroll-style behaviour. If a project wants looser, more exploratory responses, it can still override the value explicitly.
+`AI_REFINE_TEMPERATURE` defaults to `0.0` on purpose. This module is primarily an auditing and compliance tool, so repeatable ratings are preferred over creative variation or reroll-style behaviour. If a project wants looser, more exploratory responses, it can still override the value explicitly.
 
-`AI_BRAND_VOICE_MAX_TOKENS` defaults to a higher value because both the background job and the on-demand modal use the same rewrite-aware prompt. That costs more tokens, but it is a deliberate tradeoff because omitting rewrite changes the model's audit behaviour and makes the results weaker.
+`AI_REFINE_MAX_TOKENS` defaults to a higher value because both the background job and the on-demand modal use the same rewrite-aware prompt. That costs more tokens, but it is a deliberate tradeoff because omitting rewrite changes the model's audit behaviour and makes the results weaker.
 
 ### Queued jobs
 
-The `GenerateAiBrandVoiceJob` processes pages in batches. These settings control rate limiting and scheduling.
+The `GenerateAiRefineJob` processes pages in batches. These settings control rate limiting and scheduling.
 
 ```bash
-AI_BRAND_VOICE_RATE_LIMIT_DELAY=6           # Min seconds between API request starts (see below)
-AI_BRAND_VOICE_JOB_BATCH_SIZE=50            # Max pages processed per job run
-AI_BRAND_VOICE_JOB_REQUEUE_DELAY=28800      # Seconds before scheduling next run (default: 8 hours)
+AI_REFINE_RATE_LIMIT_DELAY=6           # Min seconds between API request starts (see below)
+AI_REFINE_JOB_BATCH_SIZE=50            # Max pages processed per job run
+AI_REFINE_JOB_REQUEUE_DELAY=28800      # Seconds before scheduling next run (default: 8 hours)
 ```
 
 The rate limit delay is measured from the **start** of each API request, not from when it finishes. If a request takes longer than the delay, the next request starts immediately with no extra wait.
@@ -96,7 +96,7 @@ The rate limit delay is measured from the **start** of each API request, not fro
 
 ### SiteConfig dependency
 
-Brand voice depends on `SiteConfig.BrandVoiceDefinition`. Editors configure this in **Settings > Brand voice**, and both the background job and the on-demand modal use that same definition as the source of truth.
+Refine depends on `SiteConfig.RefineDefinition`. Editors configure this in **Settings > Refine**, and both the background job and the on-demand modal use that same definition as the source of truth.
 
 If the definition is empty:
 
@@ -108,13 +108,13 @@ If the definition is empty:
 
 The on-demand workflow is a review-and-apply modal aimed at CMS editors working on a specific page:
 
-1. Open the page in the CMS and click **Brand voice** in the preview toolbar.
-2. Click **Rewrite for brand voice** to evaluate the page's saved Draft content against the configured brand voice.
+1. Open the page in the CMS and click **Refine** in the preview toolbar.
+2. Click **Rewrite for refine** to evaluate the page's saved Draft content against the configured refine.
 3. Review the returned rating, reasoning summary, and per-target diff cards.
 4. Select only the suggestions you want to accept.
 5. Click **Apply changes** to write those changes back to Draft content.
 
-The modal does not edit suggestion text inline and does not persist on-demand results to `BrandVoiceAnalysis`. Instead, it acts as a focused review surface for applying selected rewrites to the current page draft.
+The modal does not edit suggestion text inline and does not persist on-demand results to `RefineAnalysis`. Instead, it acts as a focused review surface for applying selected rewrites to the current page draft.
 
 ### Draft and Live behaviour
 
@@ -127,10 +127,10 @@ This split is intentional: site owners get a report about what is currently publ
 
 ## CMS report
 
-The **Brand voice compliance** report gives website owners and CMS administrators a worst-first overview of how published content aligns with the configured brand voice.
+The **Refine compliance** report gives website owners and CMS administrators a worst-first overview of how published content aligns with the configured refine.
 
 - Ratings and reasoning come from the background job's Live-content analysis.
 - The **Analysis status** column compares that stored analysis against the page's current CMS content hash, so draft edits can show a row as **Out of date** before anything is published.
-- If no brand voice has been configured in Site Settings, the report shows an informational setup banner instead of the table.
+- If no refine has been configured in Site Settings, the report shows an informational setup banner instead of the table.
 
 Together, the report and modal cover two different jobs: the report audits the published site, while the modal supports page-by-page editorial review and application on Draft.

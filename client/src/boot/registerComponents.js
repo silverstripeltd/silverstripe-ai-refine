@@ -1,14 +1,14 @@
 /* eslint-disable */
 import Injector from 'lib/Injector';
-import AiBrandVoiceActionButton from 'components/AiBrandVoiceActionButton';
-import AiBrandVoiceModal from 'components/AiBrandVoiceModal';
+import AiRefineActionButton from 'components/AiRefineActionButton';
+import AiRefineModal from 'components/AiRefineModal';
 
 /**
- * Registers the Brand Voice React components with the Silverstripe injector.
+ * Registers the Refine React components with the Silverstripe injector.
  */
 const registerComponents = () => {
-  Injector.component.register('AiBrandVoiceActionButton', AiBrandVoiceActionButton);
-  Injector.component.register('AiBrandVoiceModal', AiBrandVoiceModal);
+  Injector.component.register('AiRefineActionButton', AiRefineActionButton);
+  Injector.component.register('AiRefineModal', AiRefineModal);
 };
 
 export default registerComponents;

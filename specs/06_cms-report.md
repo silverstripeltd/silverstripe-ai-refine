@@ -2,13 +2,13 @@
 
 ## Overview
 
-A Silverstripe CMS report showing brand voice compliance across the site. Accessible from the Reports section of the CMS. Aimed at website owners who want a high-level view of how well their content aligns with the defined brand voice.
+A Silverstripe CMS report showing refine compliance across the site. Accessible from the Reports section of the CMS. Aimed at website owners who want a high-level view of how well their content aligns with the defined refine.
 
 ## Report class
 
-- Class: `BrandVoiceReport` (namespace: `SilverstripeLtd\AiBrandVoice\Reports\BrandVoiceReport`)
+- Class: `RefineReport` (namespace: `SilverstripeLtd\AiRefine\Reports\RefineReport`)
 - Extends: `SilverStripe\Reports\Report`
-- Title: "Brand Voice Compliance"
+- Title: "Refine Compliance"
 - Description: "Ratings are generated from published (Live) page content by a background job. Analysis status compares that saved result against the page's current CMS content."
 
 ## Columns
@@ -36,11 +36,11 @@ A Silverstripe CMS report showing brand voice compliance across the site. Access
 - Default sort: Rating priority (Poor first, then Needs work, Adequate, Good, Excellent, Not analysed last), then page title alphabetically
 - Worst-first ordering so the website owner sees the most problematic pages at the top
 
-## Empty brand voice state
+## Empty refine state
 
-If `BrandVoiceDefinition` on SiteConfig is empty, the report shows an informational banner instead of the table:
+If `RefineDefinition` on SiteConfig is empty, the report shows an informational banner instead of the table:
 
-> "No brand voice has been defined. Configure your brand voice in Settings > Brand Voice."
+> "No refine has been defined. Configure your refine in Settings > Refine."
 
 ## Permissions
 
@@ -50,7 +50,7 @@ If `BrandVoiceDefinition` on SiteConfig is empty, the report shows an informatio
 
 ## Data source
 
-The report is driven from `SiteTree` records with an optional join to `BrandVoiceAnalysis`. Pages without an analysis record appear as "Not analysed" with empty reasoning and "Never" for last analysed. This ensures all pages are visible in the report, not just those the background job has processed.
+The report is driven from `SiteTree` records with an optional join to `RefineAnalysis`. Pages without an analysis record appear as "Not analysed" with empty reasoning and "Never" for last analysed. This ensures all pages are visible in the report, not just those the background job has processed.
 
 Persisted ratings and reasoning still come from the background job's Live-content analysis. Only the "Analysis status" column is draft-aware.
 

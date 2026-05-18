@@ -1,11 +1,11 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests;
+namespace SilverstripeLtd\AiRefine\Tests;
 
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
-use SilverstripeLtd\AiBrandVoice\Providers\AbstractAIProvider;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceFullResult;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Providers\AbstractAIProvider;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 
 /**
  * Stub provider returning fixed results.
@@ -18,7 +18,7 @@ class StubProvider extends AbstractAIProvider
      * Configures the stub to return either a fixed result or a fixed exception.
      */
     public function __construct(
-        private readonly ?BrandVoiceFullResult $fullResult = null,
+        private readonly ?RefineFullResult $fullResult = null,
         private readonly ?AIProviderException $exception = null
     ) {
     }
@@ -26,19 +26,19 @@ class StubProvider extends AbstractAIProvider
     /**
      * Returns the configured result or exception while tracking evaluation calls.
      */
-    public function evaluateBrandVoice(
+    public function evaluateRefine(
         string $content,
         string $pageTitle,
-        string $brandVoiceDefinition,
+        string $refineDefinition,
         array $rewriteTargets = []
-    ): BrandVoiceFullResult {
+    ): RefineFullResult {
         $this->evaluationCallCount++;
 
         if ($this->exception) {
             throw $this->exception;
         }
-        return $this->fullResult ?: new BrandVoiceFullResult('Good', 'Stub summary', [
-            new BrandVoiceSuggestion('page:title', 'page_title', '', null, '', 'Updated title'),
+        return $this->fullResult ?: new RefineFullResult('Good', 'Stub summary', [
+            new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated title'),
         ]);
     }
 

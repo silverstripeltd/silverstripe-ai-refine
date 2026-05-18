@@ -1,11 +1,11 @@
 <?php
 
-namespace SilverstripeLtd\AiBrandVoice\Tests\Providers;
+namespace SilverstripeLtd\AiRefine\Tests\Providers;
 
-use SilverstripeLtd\AiBrandVoice\Exceptions\AIProviderException;
-use SilverstripeLtd\AiBrandVoice\Tests\TestAIProvider;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceRewriteTarget;
-use SilverstripeLtd\AiBrandVoice\ValueObjects\BrandVoiceSuggestion;
+use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiRefine\Tests\TestAIProvider;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\SapphireTest;
 
@@ -20,7 +20,7 @@ class AbstractAIProviderTest extends SapphireTest
     protected function setUp(): void
     {
         parent::setUp();
-        Environment::setEnv('AI_BRAND_VOICE_API_KEY', 'test-key');
+        Environment::setEnv('AI_REFINE_API_KEY', 'test-key');
     }
 
     /**
@@ -28,9 +28,9 @@ class AbstractAIProviderTest extends SapphireTest
      */
     protected function tearDown(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_API_KEY', null);
-        Environment::setEnv('AI_BRAND_VOICE_REQUEST_TIMEOUT', null);
-        Environment::setEnv('AI_BRAND_VOICE_TEMPERATURE', null);
+        Environment::setEnv('AI_REFINE_API_KEY', null);
+        Environment::setEnv('AI_REFINE_REQUEST_TIMEOUT', null);
+        Environment::setEnv('AI_REFINE_TEMPERATURE', null);
 
         parent::tearDown();
     }
@@ -49,12 +49,12 @@ class AbstractAIProviderTest extends SapphireTest
             ],
         ]);
 
-        $result = $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+        $result = $provider->evaluateRefine('content', 'Page title', 'Refine definition');
 
         $this->assertSame('Good', $result->rating);
         $this->assertSame('Mostly on-brand.', $result->reasoningSummary);
         $this->assertCount(1, $result->suggestions);
-        $this->assertInstanceOf(BrandVoiceSuggestion::class, $result->suggestions[0]);
+        $this->assertInstanceOf(RefineSuggestion::class, $result->suggestions[0]);
         $this->assertSame('page:title', $result->suggestions[0]->targetKey);
         $this->assertSame('page_title', $result->suggestions[0]->targetType);
         $this->assertSame('Updated title', $result->suggestions[0]->suggestedContent);
@@ -76,7 +76,7 @@ class AbstractAIProviderTest extends SapphireTest
             ],
         ]);
 
-        $result = $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+        $result = $provider->evaluateRefine('content', 'Page title', 'Refine definition');
 
         $this->assertSame('Excellent', $result->rating);
         $this->assertSame('Strong match.', $result->reasoningSummary);
@@ -98,7 +98,7 @@ class AbstractAIProviderTest extends SapphireTest
             ],
         ]);
 
-        $result = $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+        $result = $provider->evaluateRefine('content', 'Page title', 'Refine definition');
 
         $this->assertCount(1, $result->suggestions);
         $this->assertSame('element_text', $result->suggestions[0]->targetType);
@@ -115,7 +115,7 @@ class AbstractAIProviderTest extends SapphireTest
         ]);
 
         $this->expectException(AIProviderException::class);
-        $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+        $provider->evaluateRefine('content', 'Page title', 'Refine definition');
     }
 
     /**
@@ -132,7 +132,7 @@ class AbstractAIProviderTest extends SapphireTest
         ]);
 
         $this->expectException(AIProviderException::class);
-        $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+        $provider->evaluateRefine('content', 'Page title', 'Refine definition');
     }
 
     /**
@@ -149,14 +149,14 @@ class AbstractAIProviderTest extends SapphireTest
             ],
         ]);
 
-        $result = $provider->evaluateBrandVoice(
+        $result = $provider->evaluateRefine(
             'content',
             'Page title',
-            'Brand voice definition',
+            'Refine definition',
             [
-                new BrandVoiceRewriteTarget(
+                new RefineRewriteTarget(
                     'element:4:field:myfield',
-                    BrandVoiceRewriteTarget::TYPE_ELEMENT_TEXT,
+                    RefineRewriteTarget::TYPE_ELEMENT_TEXT,
                     'MyField',
                     4,
                     'Original text'
@@ -179,7 +179,7 @@ class AbstractAIProviderTest extends SapphireTest
         ]);
 
         try {
-            $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+            $provider->evaluateRefine('content', 'Page title', 'Refine definition');
             $this->fail('Expected provider exception to be thrown.');
         } catch (AIProviderException $exception) {
             $this->assertTrue($exception->isFatal());
@@ -197,7 +197,7 @@ class AbstractAIProviderTest extends SapphireTest
         ]);
 
         try {
-            $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+            $provider->evaluateRefine('content', 'Page title', 'Refine definition');
             $this->fail('Expected provider exception to be thrown.');
         } catch (AIProviderException $exception) {
             $this->assertFalse($exception->isFatal());
@@ -210,11 +210,11 @@ class AbstractAIProviderTest extends SapphireTest
      */
     public function testMissingApiKeyIsFatal(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_API_KEY', null);
+        Environment::setEnv('AI_REFINE_API_KEY', null);
         $provider = new TestAIProvider([]);
 
         try {
-            $provider->evaluateBrandVoice('content', 'Page title', 'Brand voice definition');
+            $provider->evaluateRefine('content', 'Page title', 'Refine definition');
             $this->fail('Expected provider exception to be thrown.');
         } catch (AIProviderException $exception) {
             $this->assertTrue($exception->isFatal());
@@ -226,7 +226,7 @@ class AbstractAIProviderTest extends SapphireTest
      */
     public function testTimeoutUsesEnv(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_REQUEST_TIMEOUT', '12');
+        Environment::setEnv('AI_REFINE_REQUEST_TIMEOUT', '12');
         $provider = new TestAIProvider([]);
 
         $this->assertSame(12, $provider->getResolvedTimeout());
@@ -247,7 +247,7 @@ class AbstractAIProviderTest extends SapphireTest
      */
     public function testTemperatureUsesEnvOverride(): void
     {
-        Environment::setEnv('AI_BRAND_VOICE_TEMPERATURE', '0.35');
+        Environment::setEnv('AI_REFINE_TEMPERATURE', '0.35');
         $provider = new TestAIProvider([]);
 
         $this->assertSame(0.35, $provider->getResolvedTemperature());

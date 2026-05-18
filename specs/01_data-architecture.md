@@ -1,13 +1,13 @@
 # Data Architecture
 
-## BrandVoiceAnalysis DataObject
+## RefineAnalysis DataObject
 
 Stores the background job's analysis result for a page. On-demand (modal) results are NOT stored here - they are cached on the Entwine instance for the editing session only.
 
 ### Schema
 
-- **Class name:** `BrandVoiceAnalysis` (namespace: `SilverstripeLtd\AiBrandVoice\Models\BrandVoiceAnalysis`)
-- **Relationship:** `BrandVoiceAnalysis` has_one `Parent` (polymorphic)
+- **Class name:** `RefineAnalysis` (namespace: `SilverstripeLtd\AiRefine\Models\RefineAnalysis`)
+- **Relationship:** `RefineAnalysis` has_one `Parent` (polymorphic)
   - `ParentID` (Int) + `ParentClass` (Varchar) - standard Silverstripe polymorphic pattern
   - The page does NOT have a has_one to the analysis; instead, the analysis points back to the page
   - Polymorphic design supports future extension to other DataObject types without migration
@@ -17,7 +17,7 @@ Stores the background job's analysis result for a page. On-demand (modal) result
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `Rating` | Enum('Excellent','Good','Adequate','NeedsWork','Poor') | Brand voice compliance rating |
+| `Rating` | Enum('Excellent','Good','Adequate','NeedsWork','Poor') | Refine compliance rating |
 | `ReasoningSummary` | Text | AI's explanation of the rating - what's on-brand, what's off |
 | `ContentHash` | Varchar(32) | MD5 hash of the extracted content at time of analysis |
 | `AnalysedAt` | DBDatetime | When the analysis was last run |
@@ -34,31 +34,31 @@ Stores the background job's analysis result for a page. On-demand (modal) result
 
 An Extension is applied to `SiteTree` that:
 
-- Provides helper methods to fetch (`getBrandVoiceAnalysis()`) and get-or-create (`getOrCreateBrandVoiceAnalysis()`) the `BrandVoiceAnalysis` record for a page
+- Provides helper methods to fetch (`getRefineAnalysis()`) and get-or-create (`getOrCreateRefineAnalysis()`) the `RefineAnalysis` record for a page
 - Adds the "Tone" button context to the CMS edit form (see `specs/07_cms-ux.md`)
 - Leaves button visibility and missing-configuration guidance to the CMS UX layer so editors can still open the modal and see the setup message when Site Settings is empty
 
 ### Lifecycle
 
-- **First access:** The `BrandVoiceAnalysis` record is created when the background job first processes a page
+- **First access:** The `RefineAnalysis` record is created when the background job first processes a page
 - **Module removal:** The analysis table and extension are simply removed. No impact on page content.
 
-## SiteConfig - Brand Voice Definition
+## SiteConfig - Refine Definition
 
 ### Field
 
-A single `BrandVoiceDefinition` field on `SiteConfig` via an Extension:
+A single `RefineDefinition` field on `SiteConfig` via an Extension:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `BrandVoiceDefinition` | Text | Free-text brand voice / style guide definition |
+| `RefineDefinition` | Text | Free-text refine / style guide definition |
 
 ### CMS presentation
 
-- Located in a "Brand Voice" tab on SiteConfig
-- Label: "Brand Voice Definition"
-- Help text: "Define your brand's tone of voice, writing style, and content guidelines. This will be used by AI to evaluate page content for compliance. You can generate a brand voice guide using ChatGPT or similar tools and paste it here."
-- Placeholder text shows a sample generic brand voice (see below)
+- Located in a "Refine" tab on SiteConfig
+- Label: "Refine Definition"
+- Help text: "Define your brand's tone of voice, writing style, and content guidelines. This will be used by AI to evaluate page content for compliance. You can generate a refine guide using ChatGPT or similar tools and paste it here."
+- Placeholder text shows a sample generic refine (see below)
 - TextareaField - no rich text, plain text only
 
 ### Input normalisation
@@ -76,7 +76,7 @@ On save, the field value is cleaned up to handle messy copy-paste formatting:
 - **Maximum:** 10,000 characters - keeps the prompt within reasonable token limits
 - Validation on save with a clear error message
 
-### Sample brand voice
+### Sample refine
 
 Shown as placeholder text on the field:
 
@@ -84,8 +84,8 @@ Shown as placeholder text on the field:
 
 ### Bootstrap task
 
-The module also ships a build task, `create-generic-brand-voice`, that seeds or updates `SiteConfig.BrandVoiceDefinition` with the module's reusable starter definition. This gives a supported bootstrap path for new projects without changing the underlying field model.
-Our brand voice is professional yet approachable. We write in plain English and avoid jargon, acronyms, and overly technical language unless absolutely necessary.
+The module also ships a build task, `create-generic-brand-voice`, that seeds or updates `SiteConfig.RefineDefinition` with the module's reusable starter definition. This gives a supported bootstrap path for new projects without changing the underlying field model.
+Our refine is professional yet approachable. We write in plain English and avoid jargon, acronyms, and overly technical language unless absolutely necessary.
 
 Tone: Confident, helpful, and warm. We speak as a knowledgeable friend, not a faceless corporation.
 
@@ -106,7 +106,7 @@ Content structure:
 
 ### Empty state behaviour
 
-When `BrandVoiceDefinition` is empty:
+When `RefineDefinition` is empty:
 - The "Tone" button is still shown for editable saved pages so the modal can explain that configuration is missing
-- The background job logs a message ("No brand voice definition configured - skipping all pages") and processes zero pages
-- The CMS report shows an informational banner: "No brand voice has been defined. Configure your brand voice in Settings > Brand Voice."
+- The background job logs a message ("No refine definition configured - skipping all pages") and processes zero pages
+- The CMS report shows an informational banner: "No refine has been defined. Configure your refine in Settings > Refine."

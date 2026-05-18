@@ -9,8 +9,8 @@ jest.mock('lib/Injector', () => ({
   },
 }), { virtual: true });
 
-jest.mock('components/AiBrandVoiceActionButton', () => 'AiBrandVoiceActionButton', { virtual: true });
-jest.mock('components/AiBrandVoiceModal', () => 'AiBrandVoiceModal', { virtual: true });
+jest.mock('components/AiRefineActionButton', () => 'AiRefineActionButton', { virtual: true });
+jest.mock('components/AiRefineModal', () => 'AiRefineModal', { virtual: true });
 
 import Injector from 'lib/Injector';
 import registerComponents from '../../src/boot/registerComponents';
@@ -18,6 +18,6 @@ import registerComponents from '../../src/boot/registerComponents';
 test('registerComponents registers the toolbar button and modal components', () => {
   registerComponents();
 
-  expect(Injector.component.register).toHaveBeenNthCalledWith(1, 'AiBrandVoiceActionButton', 'AiBrandVoiceActionButton');
-  expect(Injector.component.register).toHaveBeenNthCalledWith(2, 'AiBrandVoiceModal', 'AiBrandVoiceModal');
+  expect(Injector.component.register).toHaveBeenNthCalledWith(1, 'AiRefineActionButton', 'AiRefineActionButton');
+  expect(Injector.component.register).toHaveBeenNthCalledWith(2, 'AiRefineModal', 'AiRefineModal');
 });

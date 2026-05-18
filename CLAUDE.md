@@ -1,8 +1,8 @@
-# AI Brand Voice for Silverstripe CMS
+# AI Refine for Silverstripe CMS
 
-This current project is to build a Silverstripe CMS "ai-brand-voice" module in `vendor/silverstripeltd/ai-brand-voice`. No other work is being performed.
+This current project is to build a Silverstripe CMS "ai-refine" module in `vendor/silverstripeltd/ai-refine`. No other work is being performed.
 
-Do not modify any files outside of the `vendor/silverstripeltd/ai-brand-voice` directory unless explicitly instructed to do so.
+Do not modify any files outside of the `vendor/silverstripeltd/ai-refine` directory unless explicitly instructed to do so.
 
 **Silverstripe CMS 6** module that lets users define a corporate content style guide and uses AI to evaluate page content against it, surfacing compliance status and recommendations in the CMS.
 
@@ -47,11 +47,11 @@ All commands run inside Docker via SSH. Never call `phpunit`, `phpcs`, `phpcbf`,
 
 #### Running tests
 
-`ssh webserver "cd /var/www && rm -rf /tmp/pu-cache && mkdir -p /tmp/pu-cache && SS_TEMP_PATH=/tmp/pu-cache nice -n 19 ionice -c 3 taskset -c 0 vendor/bin/phpunit vendor/silverstripeltd/ai-brand-voice/tests/ --fail-on-warning [--filter={test-name}]"`
+`ssh webserver "cd /var/www && rm -rf /tmp/pu-cache && mkdir -p /tmp/pu-cache && SS_TEMP_PATH=/tmp/pu-cache nice -n 19 ionice -c 3 taskset -c 0 vendor/bin/phpunit vendor/silverstripeltd/ai-refine/tests/ --fail-on-warning [--filter={test-name}]"`
 
 #### PHP linting
 
-`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice && nice -n 19 ionice -c 3 taskset -c 0 ../../bin/{binary} --ignore=*/thirdparty/*,*/node_modules/* --extensions=php ."`
+`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine && nice -n 19 ionice -c 3 taskset -c 0 ../../bin/{binary} --ignore=*/thirdparty/*,*/node_modules/* --extensions=php ."`
 
 Run `phpcs` or `phpcbf` after changing PHP files.
 
@@ -71,11 +71,11 @@ This module depends on `vendor/silverstripe/admin` for shared JS tooling. Before
 
 #### Running tests
 
-`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn test"`
+`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn test"`
 
 #### Linting
 
-`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn lint"`
+`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn lint"`
 
 ### Spec editing rules
 
@@ -85,7 +85,7 @@ This module depends on `vendor/silverstripe/admin` for shared JS tooling. Before
 
 If any `.js` or `.jsx` files were changed during the task, run `yarn build` as the **very last code-related step**, after all implementation, tests, and linting pass. Do not run it mid-implementation to check progress.
 
-`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-brand-voice/client && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn install && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn build"`
+`ssh webserver "cd /var/www/vendor/silverstripeltd/ai-refine/client && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn install && NODE_OPTIONS=--max-old-space-size=512 nice -n 19 ionice -c 3 taskset -c 0 yarn build"`
 
 ## Other files
 
@@ -97,4 +97,4 @@ Read `/app/z-learnings.md` if it exists. Append non-obvious discoveries - gotcha
 
 ## z- file outputs
 
-If you are asked to create any `z-*.md` files, always look for them and put them in the `/app` dir, not `vendor/silverstripeltd/ai-brand-voice`.
+If you are asked to create any `z-*.md` files, always look for them and put them in the `/app` dir, not `vendor/silverstripeltd/ai-refine`.
