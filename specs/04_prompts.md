@@ -66,7 +66,7 @@ Key instructions:
 - Match each rewrite target's `contentFormat`
 - For `text` targets, return plain text only with no HTML tags
 - For `html` targets, return clean HTML suitable for writing directly to the mapped Silverstripe field
-- **Content delimiters:** `=== BRAND_VOICE_DEFINITION_START/END ===`, `=== PAGE_CONTENT_START/END ===`, and `=== REWRITE_TARGETS_START/END ===` to separate prompt instructions from content
+- **Content delimiters:** `=== WRITING_STYLE_AND_TONE_RULES_DEFINITION_START/END ===`, `=== PAGE_CONTENT_START/END ===`, and `=== REWRITE_TARGETS_START/END ===` to separate prompt instructions from content
 - **"Return only the JSON object"** reinforced at the end
 
 Expected JSON output:

@@ -145,9 +145,11 @@ test('disables check and apply while the edit form is dirty', async () => {
   await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
 
   expect(screen.queryByText(/save the page to draft before checking if you have unsaved changes/i)).not.toBeNull();
-  expect(screen.getByRole('button', { name: 'Regenerate' }).disabled).toBe(true);
-  expect(screen.getByRole('button', { name: 'Apply changes' }).disabled).toBe(true);
-  expect(screen.getByRole('checkbox', { name: 'Apply Page title' }).disabled).toBe(true);
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Regenerate' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Apply changes' }).disabled).toBe(true);
+    expect(screen.getByRole('checkbox', { name: 'Apply Page title' }).disabled).toBe(true);
+  });
 });
 
 test('checks content, renders per-suggestion review cards, and applies selected suggestions', async () => {

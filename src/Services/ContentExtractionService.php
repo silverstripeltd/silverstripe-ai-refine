@@ -283,7 +283,10 @@ class ContentExtractionService
     private function getExcludedElementFieldNames(BaseElement $element): array
     {
         return array_values(array_unique([
-            ...array_keys((array) BaseElement::config()->get('db')),
+            ...array_filter(
+                array_keys((array) BaseElement::config()->get('db')),
+                static fn(string $fieldName): bool => $fieldName !== 'Title'
+            ),
             ...array_keys((array) $element->config()->get('fixed_fields')),
             ...(array) $element->config()->get('fields_excluded_from_cms_search'),
         ]));

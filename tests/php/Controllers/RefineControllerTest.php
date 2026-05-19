@@ -687,6 +687,14 @@ class RefineControllerTest extends FunctionalTest
         $provider = new StubProvider(new RefineFullResult('Good', 'Mostly aligned.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated mixed blocks page'),
             new RefineSuggestion(
+                sprintf('element:%d:field:title', $customElement->ID),
+                'element_text',
+                '',
+                null,
+                '',
+                'Updated block heading'
+            ),
+            new RefineSuggestion(
                 sprintf('element:%d:field:myfield', $customElement->ID),
                 'element_text',
                 '',
@@ -722,35 +730,92 @@ class RefineControllerTest extends FunctionalTest
         $this->assertSame(200, $response->getStatusCode());
         $payload = json_decode((string) $response->getBody(), true);
         $this->assertSame('Good', $payload['rating'] ?? null);
-        $this->assertCount(4, $payload['suggestions'] ?? []);
+        $this->assertCount(5, $payload['suggestions'] ?? []);
+        $suggestionsByKey = [];
+        foreach ($payload['suggestions'] as $suggestion) {
+            $suggestionsByKey[$suggestion['targetKey']] = $suggestion;
+        }
         $this->assertSame('page:title', $payload['suggestions'][0]['targetKey'] ?? null);
         $this->assertSame(
-            sprintf('element:%d:field:myfield', $customElement->ID),
-            $payload['suggestions'][1]['targetKey'] ?? null
+            'Title',
+            $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['fieldLabel'] ?? null
         );
-        $this->assertSame('My field', $payload['suggestions'][1]['fieldLabel'] ?? null);
-        $this->assertSame('My content block', $payload['suggestions'][1]['targetTitle'] ?? null);
-        $this->assertSame('text', $payload['suggestions'][1]['contentFormat'] ?? null);
-        $this->assertStringContainsString('<ins', $payload['suggestions'][1]['diffHtml'] ?? '');
-        $this->assertArrayNotHasKey('fieldScaffold', $payload['suggestions'][1] ?? []);
         $this->assertSame(
-            sprintf('element:%d:field:mybigfield', $customElement->ID),
-            $payload['suggestions'][2]['targetKey'] ?? null
+            'My content block',
+            $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['targetTitle'] ?? null
         );
-        $this->assertSame('My big field', $payload['suggestions'][2]['fieldLabel'] ?? null);
-        $this->assertSame('My content block', $payload['suggestions'][2]['targetTitle'] ?? null);
-        $this->assertSame('text', $payload['suggestions'][2]['contentFormat'] ?? null);
-        $this->assertStringContainsString('<ins', $payload['suggestions'][2]['diffHtml'] ?? '');
-        $this->assertArrayNotHasKey('fieldScaffold', $payload['suggestions'][2] ?? []);
         $this->assertSame(
-            sprintf('element:%d:html', $supportedElement->ID),
-            $payload['suggestions'][3]['targetKey'] ?? null
+            'text',
+            $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['contentFormat'] ?? null
         );
-        $this->assertSame('HTML', $payload['suggestions'][3]['fieldLabel'] ?? null);
-        $this->assertSame('Content', $payload['suggestions'][3]['targetTitle'] ?? null);
-        $this->assertSame('html', $payload['suggestions'][3]['contentFormat'] ?? null);
-        $this->assertStringContainsString('<ins', $payload['suggestions'][3]['diffHtml'] ?? '');
-        $this->assertArrayNotHasKey('fieldScaffold', $payload['suggestions'][3] ?? []);
+        $this->assertStringContainsString(
+            '<ins',
+            $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['diffHtml'] ?? ''
+        );
+        $this->assertArrayNotHasKey(
+            'fieldScaffold',
+            $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)] ?? []
+        );
+        $this->assertSame(
+            'My field',
+            $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['fieldLabel'] ?? null
+        );
+        $this->assertSame(
+            'My content block',
+            $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['targetTitle'] ?? null
+        );
+        $this->assertSame(
+            'text',
+            $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['contentFormat'] ?? null
+        );
+        $this->assertStringContainsString(
+            '<ins',
+            $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['diffHtml'] ?? ''
+        );
+        $this->assertArrayNotHasKey(
+            'fieldScaffold',
+            $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)] ?? []
+        );
+        $this->assertSame(
+            'My big field',
+            $suggestionsByKey[sprintf('element:%d:field:mybigfield', $customElement->ID)]['fieldLabel'] ?? null
+        );
+        $this->assertSame(
+            'My content block',
+            $suggestionsByKey[sprintf('element:%d:field:mybigfield', $customElement->ID)]['targetTitle'] ?? null
+        );
+        $this->assertSame(
+            'text',
+            $suggestionsByKey[sprintf('element:%d:field:mybigfield', $customElement->ID)]['contentFormat'] ?? null
+        );
+        $this->assertStringContainsString(
+            '<ins',
+            $suggestionsByKey[sprintf('element:%d:field:mybigfield', $customElement->ID)]['diffHtml'] ?? ''
+        );
+        $this->assertArrayNotHasKey(
+            'fieldScaffold',
+            $suggestionsByKey[sprintf('element:%d:field:mybigfield', $customElement->ID)] ?? []
+        );
+        $this->assertSame(
+            'HTML',
+            $suggestionsByKey[sprintf('element:%d:html', $supportedElement->ID)]['fieldLabel'] ?? null
+        );
+        $this->assertSame(
+            'Content',
+            $suggestionsByKey[sprintf('element:%d:html', $supportedElement->ID)]['targetTitle'] ?? null
+        );
+        $this->assertSame(
+            'html',
+            $suggestionsByKey[sprintf('element:%d:html', $supportedElement->ID)]['contentFormat'] ?? null
+        );
+        $this->assertStringContainsString(
+            '<ins',
+            $suggestionsByKey[sprintf('element:%d:html', $supportedElement->ID)]['diffHtml'] ?? ''
+        );
+        $this->assertArrayNotHasKey(
+            'fieldScaffold',
+            $suggestionsByKey[sprintf('element:%d:html', $supportedElement->ID)] ?? []
+        );
     }
 
     /**
@@ -792,6 +857,11 @@ class RefineControllerTest extends FunctionalTest
                                 'suggestedContent' => 'Broken blocks page',
                             ],
                             [
+                                'targetKey' => sprintf('element:%d:field:title', $customElement->ID),
+                                'targetType' => 'element_text',
+                                'suggestedContent' => 'Improved first block heading',
+                            ],
+                            [
                                 'targetKey' => sprintf('element:%d:field:myfield', $customElement->ID),
                                 'suggestedContent' => 'A clearer introduction that matches the refine',
                             ],
@@ -815,22 +885,38 @@ class RefineControllerTest extends FunctionalTest
             $this->assertSame(200, $response->getStatusCode());
             $payload = json_decode((string) $response->getBody(), true);
             $this->assertSame('NeedsWork', $payload['rating'] ?? null);
-            $this->assertCount(3, $payload['suggestions'] ?? []);
+            $this->assertCount(4, $payload['suggestions'] ?? []);
+            $suggestionsByKey = [];
+            foreach ($payload['suggestions'] as $suggestion) {
+                $suggestionsByKey[$suggestion['targetKey']] = $suggestion;
+            }
             $this->assertSame(
-                sprintf('element:%d:field:myfield', $customElement->ID),
-                $payload['suggestions'][1]['targetKey'] ?? null
+                'element_text',
+                $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['targetType'] ?? null
             );
-            $this->assertSame('element_text', $payload['suggestions'][1]['targetType'] ?? null);
-            $this->assertSame('MyField', $payload['suggestions'][1]['fieldName'] ?? null);
-            $this->assertSame('My field', $payload['suggestions'][1]['fieldLabel'] ?? null);
-            $this->assertSame('Bad first block', $payload['suggestions'][1]['targetTitle'] ?? null);
+            $this->assertSame(
+                'Title',
+                $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['fieldName'] ?? null
+            );
+            $this->assertSame(
+                'Title',
+                $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['fieldLabel'] ?? null
+            );
+            $this->assertSame(
+                'Bad first block',
+                $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['targetTitle'] ?? null
+            );
+            $this->assertSame(
+                'Bad first block',
+                $suggestionsByKey[sprintf('element:%d:field:title', $customElement->ID)]['sourceContent'] ?? null
+            );
             $this->assertSame(
                 'This badly worded intro block needs work',
-                $payload['suggestions'][1]['sourceContent'] ?? null
+                $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['sourceContent'] ?? null
             );
             $this->assertSame(
                 'A clearer introduction that matches the refine',
-                $payload['suggestions'][1]['suggestedContent'] ?? null
+                $suggestionsByKey[sprintf('element:%d:field:myfield', $customElement->ID)]['suggestedContent'] ?? null
             );
         } finally {
             Environment::setEnv('AI_REFINE_API_KEY', null);

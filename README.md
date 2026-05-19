@@ -92,6 +92,17 @@ AI_REFINE_JOB_REQUEUE_DELAY=28800      # Seconds before scheduling next run (def
 
 The rate limit delay is measured from the **start** of each API request, not from when it finishes. If a request takes longer than the delay, the next request starts immediately with no extra wait.
 
+## Supported content
+
+Refine evaluates and rewrites text-based fields on the page and its Elemental content blocks. Specifically, it supports:
+
+- **TextField** fields (`Varchar` database type)
+- **TextareaField** fields (`Text` database type)
+- **HTMLEditorField** (WYSIWYG) fields (`HTMLText`, `HTMLVarchar` database types)
+- **Page Title and Content** fields
+
+Other field types (e.g. dropdowns, dates, checkboxes) and titles or content on related objects (e.g. a linked Banner's heading) are not included in the analysis or rewrite suggestions.
+
 ## Usage
 
 ### SiteConfig dependency

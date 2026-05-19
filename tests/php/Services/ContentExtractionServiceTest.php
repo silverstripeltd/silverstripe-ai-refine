@@ -180,9 +180,11 @@ class ContentExtractionServiceTest extends SapphireTest
         $page->write();
 
         $page->ElementalArea()->Elements()->add(ElementContent::create([
+            'Title' => 'Invisible heading',
             'HTML' => '<p>First block</p>',
         ]));
         $page->ElementalArea()->Elements()->add(ElementContent::create([
+            'Title' => 'Second invisible heading',
             'HTML' => '<p>Second <strong>block</strong></p>',
         ]));
 
@@ -191,17 +193,36 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertStringContainsString('Elemental title', $result->content);
         $this->assertStringContainsString('First block', $result->content);
         $this->assertMatchesRegularExpression('/Second\\s+block/', $result->content);
-        $this->assertCount(3, $result->rewriteTargets);
+        $this->assertCount(5, $result->rewriteTargets);
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
-        $this->assertStringStartsWith('element:', $result->rewriteTargets[1]->targetKey);
-        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[1]->targetType);
-        $this->assertSame('HTML', $result->rewriteTargets[1]->fieldName);
-        $this->assertSame('First block', $result->rewriteTargets[1]->sourceContent);
-        $this->assertSame('<p>First block</p>', $result->rewriteTargets[1]->getDiffSourceContent());
-        $this->assertSame('Second *block*', $result->rewriteTargets[2]->sourceContent);
+        $titleTargets = array_values(array_filter(
+            $result->rewriteTargets,
+            static fn(RefineRewriteTarget $target): bool => $target->fieldName === 'Title'
+                && $target->targetKey !== 'page:title'
+        ));
+        $htmlTargets = array_values(array_filter(
+            $result->rewriteTargets,
+            static fn(RefineRewriteTarget $target): bool => $target->fieldName === 'HTML'
+        ));
+        $this->assertCount(2, $titleTargets);
+        $this->assertCount(2, $htmlTargets);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $titleTargets[0]->targetType);
+        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $titleTargets[1]->targetType);
         $this->assertSame(
-            '<p>Second <strong>block</strong></p>',
-            $result->rewriteTargets[2]->getDiffSourceContent()
+            ['Invisible heading', 'Second invisible heading'],
+            array_map(static fn(RefineRewriteTarget $target): string => $target->sourceContent, $titleTargets)
+        );
+        $this->assertSame(
+            ['Invisible heading', 'Second invisible heading'],
+            array_map(static fn(RefineRewriteTarget $target): string => $target->targetTitle, $titleTargets)
+        );
+        $this->assertSame(
+            ['First block', 'Second *block*'],
+            array_map(static fn(RefineRewriteTarget $target): string => $target->sourceContent, $htmlTargets)
+        );
+        $this->assertSame(
+            ['<p>First block</p>', '<p>Second <strong>block</strong></p>'],
+            array_map(static fn(RefineRewriteTarget $target): string => $target->getDiffSourceContent(), $htmlTargets)
         );
         $this->assertStringNotContainsString('Legacy content', implode(' ', array_map(
             static fn(RefineRewriteTarget $target): string => $target->sourceContent,
@@ -279,24 +300,30 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertStringContainsString('Untemplated block copy', $result->content);
         $this->assertStringContainsString('Supported block', $result->content);
         $this->assertStringNotContainsString('Legacy fallback', $result->content);
-        $this->assertCount(4, $result->rewriteTargets);
+        $this->assertCount(5, $result->rewriteTargets);
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
-        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[1]->targetType);
-        $this->assertSame('MyField', $result->rewriteTargets[1]->fieldName);
-        $this->assertSame('My field', $result->rewriteTargets[1]->fieldLabel);
-        $this->assertSame('My content block', $result->rewriteTargets[1]->targetTitle);
-        $this->assertSame('Untemplated block title', $result->rewriteTargets[1]->sourceContent);
-        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_TEXT, $result->rewriteTargets[2]->targetType);
-        $this->assertSame('MyBigField', $result->rewriteTargets[2]->fieldName);
-        $this->assertSame('My big field', $result->rewriteTargets[2]->fieldLabel);
-        $this->assertSame('My content block', $result->rewriteTargets[2]->targetTitle);
-        $this->assertSame('Untemplated block copy', $result->rewriteTargets[2]->sourceContent);
-        $this->assertSame(RefineRewriteTarget::TYPE_ELEMENT_HTML, $result->rewriteTargets[3]->targetType);
-        $this->assertSame('HTML', $result->rewriteTargets[3]->fieldName);
-        $this->assertSame('HTML', $result->rewriteTargets[3]->fieldLabel);
-        $this->assertSame('Content', $result->rewriteTargets[3]->targetTitle);
-        $this->assertSame('Supported block', $result->rewriteTargets[3]->sourceContent);
-        $this->assertSame('<p>Supported block</p>', $result->rewriteTargets[3]->getDiffSourceContent());
+        $elementTargets = array_values(array_filter(
+            $result->rewriteTargets,
+            static fn(RefineRewriteTarget $target): bool => $target->targetKey !== 'page:title'
+        ));
+        $targetsByField = [];
+        foreach ($elementTargets as $target) {
+            $targetsByField[$target->fieldName] ??= [];
+            $targetsByField[$target->fieldName][] = $target;
+        }
+        $this->assertSame('Title', $targetsByField['Title'][0]->fieldLabel);
+        $this->assertSame('My content block', $targetsByField['Title'][0]->targetTitle);
+        $this->assertSame('My content block', $targetsByField['Title'][0]->sourceContent);
+        $this->assertSame('My field', $targetsByField['MyField'][0]->fieldLabel);
+        $this->assertSame('My content block', $targetsByField['MyField'][0]->targetTitle);
+        $this->assertSame('Untemplated block title', $targetsByField['MyField'][0]->sourceContent);
+        $this->assertSame('My big field', $targetsByField['MyBigField'][0]->fieldLabel);
+        $this->assertSame('My content block', $targetsByField['MyBigField'][0]->targetTitle);
+        $this->assertSame('Untemplated block copy', $targetsByField['MyBigField'][0]->sourceContent);
+        $this->assertSame('HTML', $targetsByField['HTML'][0]->fieldLabel);
+        $this->assertSame('Content', $targetsByField['HTML'][0]->targetTitle);
+        $this->assertSame('Supported block', $targetsByField['HTML'][0]->sourceContent);
+        $this->assertSame('<p>Supported block</p>', $targetsByField['HTML'][0]->getDiffSourceContent());
     }
 
     /**
