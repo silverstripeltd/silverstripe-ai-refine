@@ -1,6 +1,33 @@
 .ai-refine-modal {
+  .modal-dialog {
+    height: calc(100% - 3.5rem);
+  }
+
+  .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 3.5rem);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
   .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overscroll-behavior: contain;
     overflow-y: auto;
+  }
+
+  .modal__close-button {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 }
 
@@ -12,9 +39,6 @@
   white-space: nowrap;
 }
 
-.ai-refine-modal__close {
-  margin-left: auto;
-}
 
 .ai-refine-modal__banner {
   border-radius: 4px;

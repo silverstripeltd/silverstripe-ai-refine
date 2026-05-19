@@ -142,13 +142,17 @@ class RefineControllerTest extends FunctionalTest
         $this->assertArrayHasKey('schema', $payload);
         $this->assertArrayHasKey('state', $payload);
         $this->assertSame(
-            'Refine with AI',
+            'Refine page content with AI',
             $payload['meta']['refine']['title'] ?? null
         );
         $this->assertSame(
             'This check evaluates your saved draft content. Save the page to draft before checking if you'
             . ' have unsaved changes.',
             $payload['meta']['refine']['messages']['draftNotice'] ?? null
+        );
+        $this->assertSame(
+            RefineCheckForm::EMPTY_STATE_MESSAGE,
+            $payload['meta']['refine']['messages']['emptyState'] ?? null
         );
         $this->assertSame(
             'Your content already matches the refine rules. No changes needed.',

@@ -80,7 +80,7 @@ test('renders a visible close button in the modal header', async () => {
     json: async () => ({
       meta: {
         refine: {
-          title: 'Rewrite with refine using AI',
+          title: 'Refine page content with AI',
         },
       },
     }),
@@ -90,7 +90,7 @@ test('renders a visible close button in the modal header', async () => {
 
   render(<AiRefineModal {...props} />);
 
-  expect(screen.getByText('Refine with AI')).not.toBeNull();
+  expect(screen.getByText('Refine page content with AI')).not.toBeNull();
   const closeButton = screen.getByRole('button', { name: 'Close' });
 
   expect(closeButton.className).toContain('btn-close');
@@ -555,7 +555,7 @@ test('clears stale cached results when the saved draft hash has changed', async 
   expect(props.onStaleResult).toHaveBeenCalledTimes(1);
   expect(screen.queryByText('Mostly aligned.')).toBeNull();
   expect(screen.queryByText('Page title')).toBeNull();
-  expect(screen.queryByText('Click the button below to check this page\'s content using your refine rules.')).not.toBeNull();
+  expect(screen.queryByText('Click the button below to check the content on this page against your writing style and tone rules.')).not.toBeNull();
   expect(screen.getByRole('button', { name: 'Refine' })).not.toBeNull();
 });
 

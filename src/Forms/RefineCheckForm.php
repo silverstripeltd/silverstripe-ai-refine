@@ -20,11 +20,11 @@ use SilverStripe\View\HTML;
 class RefineCheckForm extends Form
 {
     public const FORM_NAME_TEMPLATE = 'RefineCheckForm_%s';
-    public const MODAL_TITLE = 'Refine with AI';
+    public const MODAL_TITLE = 'Refine page content with AI';
     public const DRAFT_NOTICE = 'This check evaluates your saved draft content. Save the page to draft before'
         . ' checking if you have unsaved changes.';
-    public const EMPTY_STATE_MESSAGE = 'Click the button below to check this page\'s content against your'
-        . ' refine.';
+    public const EMPTY_STATE_MESSAGE = 'Click the button below to check the content on this page against'
+        . ' your writing style and tone rules.';
     public const ALL_ALIGNED_MESSAGE = 'Your content already matches the refine rules. No changes needed.';
     public const CHECK_BUTTON_LABEL = 'Refine';
     public const RECHECK_BUTTON_LABEL = 'Regenerate';

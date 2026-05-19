@@ -126,6 +126,7 @@ test('mergeSchemaConfig overlays server config onto defaults', () => {
   expect(merged.ratingLabels.NeedsWork).toBe('Needs work');
   expect(merged.messages.allAligned).toBe('Your content already matches the refine rules. No changes needed.');
   expect(merged.messages.emptyState).toBe('Custom empty state');
+  expect(merged.messages.missingRefine).toBe('No refine has been defined. Configure your refine in Settings > Refine.');
   expect(merged.messages.applySuccess).toBe('Refine suggestions applied to draft content');
   expect(merged.labels.apply).toBe('Apply updates');
   expect(merged.actions.applyUrl).toBe('/custom/apply/url');

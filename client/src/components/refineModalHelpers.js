@@ -4,7 +4,7 @@ import { joinUrlPaths } from 'lib/urls';
 export const CONTROLLER_CONFIG_KEY = 'SilverstripeLtd\\AiRefine\\Controllers\\RefineController';
 
 export const defaultSchemaConfig = {
-  title: 'Refine with AI',
+  title: 'Refine page content with AI',
   ratingLabels: {
     Excellent: 'Excellent',
     Good: 'Good',
@@ -14,8 +14,8 @@ export const defaultSchemaConfig = {
   },
   messages: {
     draftNotice: 'This check evaluates your saved draft content. Save the page to draft before checking if you have unsaved changes.',
-    emptyState: 'Click the button below to check this page\'s content using your refine rules.',
-    missingRefine: 'No refine rules have been defined. Configure Refine in Settings > Refine.',
+    emptyState: 'Click the button below to check the content on this page against your writing style and tone rules.',
+    missingRefine: 'No refine has been defined. Configure your refine in Settings > Refine.',
     allAligned: 'Your content already matches the refine rules. No changes needed.',
     noContent: 'This page has no content to evaluate',
     checkSuccess: 'Refine check complete',

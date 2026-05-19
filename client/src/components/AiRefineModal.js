@@ -333,7 +333,7 @@ export const AiRefineModal = ({
   const closeButton = (
     <button
       type="button"
-      className="btn btn-close btn--icon-xl btn--no-text modal__close-button ai-refine-modal__close"
+      className="btn btn-close btn--icon-xl btn--no-text modal__close-button"
       aria-label="Close"
       title="Close"
       onClick={handleClosed}
