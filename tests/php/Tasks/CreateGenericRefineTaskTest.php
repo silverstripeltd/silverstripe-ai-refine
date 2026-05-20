@@ -59,7 +59,8 @@ class CreateGenericRefineTaskTest extends SapphireTest
         [$exitCode, $output] = $this->runTask();
 
         $this->assertSame(Command::SUCCESS, $exitCode);
-        $this->assertStringContainsString('Generic writing style and tone rules is already configured in Site Settings.', $output);
+        $expected = 'Generic writing style and tone rules is already configured in Site Settings.';
+        $this->assertStringContainsString($expected, $output);
     }
 
     /**
