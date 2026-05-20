@@ -40,8 +40,8 @@ class CreateGenericRefineTaskTest extends SapphireTest
         $siteConfig = SiteConfig::current_site_config();
 
         $this->assertSame(Command::SUCCESS, $exitCode);
-        $this->assertStringContainsString("Running task 'Create generic refine'", $output);
-        $this->assertStringContainsString('Created generic refine in Site Settings.', $output);
+        $this->assertStringContainsString("Running task 'Create writing style and tone rules'", $output);
+        $this->assertStringContainsString('Created writing style and tone rules in Site Settings.', $output);
         $this->assertStringContainsString('bold, confident, and composed', $siteConfig->RefineDefinition);
         $this->assertStringContainsString(
             'government agency and a financial organisation',
@@ -59,7 +59,7 @@ class CreateGenericRefineTaskTest extends SapphireTest
         [$exitCode, $output] = $this->runTask();
 
         $this->assertSame(Command::SUCCESS, $exitCode);
-        $this->assertStringContainsString('Generic refine is already configured in Site Settings.', $output);
+        $this->assertStringContainsString('Generic writing style and tone rules is already configured in Site Settings.', $output);
     }
 
     /**

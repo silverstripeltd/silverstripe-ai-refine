@@ -47,7 +47,7 @@ TEXT;
      */
     public function getTitle(): string
     {
-        return 'Create generic refine';
+        return 'Create writing style and tone rules';
     }
 
     /**
@@ -65,14 +65,14 @@ TEXT;
             self::GENERIC_REFINE_DEFINITION
         );
         if ($existingDefinition === $genericDefinition) {
-            $output->writeln('Generic refine is already configured in Site Settings.');
+            $output->writeln('Generic writing style and tone rules is already configured in Site Settings.');
             return Command::SUCCESS;
         }
         $siteConfig->RefineDefinition = $genericDefinition;
         $siteConfig->write();
         $message = $existingDefinition === ''
-            ? 'Created generic refine in Site Settings.'
-            : 'Updated generic refine in Site Settings.';
+            ? 'Created writing style and tone rules in Site Settings.'
+            : 'Updated writing style and tone rules in Site Settings.';
         $output->writeln($message);
         return Command::SUCCESS;
     }

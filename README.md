@@ -2,6 +2,8 @@
 
 A Silverstripe CMS 6 module that lets users define a corporate content style guide and uses AI to evaluate whether page content adheres to it. The module analyses each page against the style guide and surfaces compliance status and recommendations in the CMS.
 
+![AI refine modal](docs/ai-refine-modal.png)
+
 The background job and the on-demand modal intentionally use the same rewrite-aware evaluation prompt. The background job discards `suggestions` and stores only rating and reasoning, but keeping rewrite in the prompt produces stronger audit judgements than a cheaper score-only prompt. In the CMS, editors can review those structured suggestions and apply selected ones back to Draft content before the page reloads.
 
 ## Installation
