@@ -8,7 +8,7 @@ The background job and the on-demand modal intentionally use the same rewrite-aw
 
 ## Installation
 
-This module is hosted on a private GitHub repository and is not listed on Packagist. To install it, add the following to your project's `composer.json`:
+This module is currently not listed on Packagist. To install it, add the following to your project's `composer.json`:
 
 ```json
 {
@@ -20,7 +20,7 @@ This module is hosted on a private GitHub repository and is not listed on Packag
     ],
     // ...
     "require": {
-        "silverstripeltd/ai-refine": "dev-main"
+        "silverstripeltd/ai-refine": "*"
     }
 }
 ```
