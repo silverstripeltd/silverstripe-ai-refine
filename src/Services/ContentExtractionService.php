@@ -147,16 +147,15 @@ class ContentExtractionService
         }
 
         if ($record->hasField('Content')) {
-            $content = $this->normaliseRewriteSourceContent(Convert::html2raw((string) $record->Content));
-            if ($content !== '') {
+            $rawHtml = trim((string) $record->Content);
+            if ($rawHtml !== '') {
                 $targets[] = $this->createRewriteTarget(
                     $record,
                     'page:content',
                     RefineRewriteTarget::TYPE_PAGE_CONTENT,
                     'Content',
                     $recordId,
-                    $content,
-                    trim((string) $record->Content)
+                    $rawHtml
                 );
             }
         }
@@ -223,8 +222,7 @@ class ContentExtractionService
                 $targetType,
                 $fieldName,
                 (int) $element->ID,
-                $content,
-                $targetType === RefineRewriteTarget::TYPE_ELEMENT_HTML ? trim($rawContent) : ''
+                $content
             );
         }
         return $targets;
@@ -315,7 +313,7 @@ class ContentExtractionService
     private function normaliseElementFieldContent(string $content, string $targetType): string
     {
         if ($targetType === RefineRewriteTarget::TYPE_ELEMENT_HTML) {
-            return $this->normaliseRewriteSourceContent(Convert::html2raw($content));
+            return trim($content);
         }
         return $this->normaliseRewriteSourceContent($content);
     }

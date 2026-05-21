@@ -85,7 +85,7 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertSame('Page name', $result->rewriteTargets[0]->fieldLabel);
         $this->assertSame('', $result->rewriteTargets[0]->targetTitle);
         $this->assertSame(RefineRewriteTarget::TYPE_PAGE_CONTENT, $result->rewriteTargets[1]->targetType);
-        $this->assertSame('Draft content', $result->rewriteTargets[1]->sourceContent);
+        $this->assertSame('<p>Draft content</p>', $result->rewriteTargets[1]->sourceContent);
         $this->assertSame('<p>Draft content</p>', $result->rewriteTargets[1]->getDiffSourceContent());
         $this->assertSame('Content', $result->rewriteTargets[1]->fieldLabel);
     }
@@ -161,7 +161,7 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertCount(2, $result->rewriteTargets);
         $this->assertSame('page:title', $result->rewriteTargets[0]->targetKey);
         $this->assertSame('page:content', $result->rewriteTargets[1]->targetKey);
-        $this->assertSame('Fallback HTML', $result->rewriteTargets[1]->sourceContent);
+        $this->assertSame('<p>Fallback HTML</p>', $result->rewriteTargets[1]->sourceContent);
         $this->assertSame('<p>Fallback HTML</p>', $result->rewriteTargets[1]->getDiffSourceContent());
     }
 
@@ -217,7 +217,7 @@ class ContentExtractionServiceTest extends SapphireTest
             array_map(static fn(RefineRewriteTarget $target): string => $target->targetTitle, $titleTargets)
         );
         $this->assertSame(
-            ['First block', 'Second *block*'],
+            ['<p>First block</p>', '<p>Second <strong>block</strong></p>'],
             array_map(static fn(RefineRewriteTarget $target): string => $target->sourceContent, $htmlTargets)
         );
         $this->assertSame(
@@ -266,7 +266,7 @@ class ContentExtractionServiceTest extends SapphireTest
             'page:title',
             sprintf('element:%d:html', $visibleElement->ID),
         ], $targetKeys);
-        $this->assertContains('Visible block', $targetSources);
+        $this->assertContains('<p>Visible block</p>', $targetSources);
         $this->assertNotContains('Hidden block', $targetSources);
     }
 
@@ -322,7 +322,7 @@ class ContentExtractionServiceTest extends SapphireTest
         $this->assertSame('Untemplated block copy', $targetsByField['MyBigField'][0]->sourceContent);
         $this->assertSame('HTML', $targetsByField['HTML'][0]->fieldLabel);
         $this->assertSame('Content', $targetsByField['HTML'][0]->targetTitle);
-        $this->assertSame('Supported block', $targetsByField['HTML'][0]->sourceContent);
+        $this->assertSame('<p>Supported block</p>', $targetsByField['HTML'][0]->sourceContent);
         $this->assertSame('<p>Supported block</p>', $targetsByField['HTML'][0]->getDiffSourceContent());
     }
 

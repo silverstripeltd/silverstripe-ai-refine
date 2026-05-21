@@ -302,7 +302,7 @@ class RefineControllerTest extends FunctionalTest
         $this->assertSame('Content', $payload['suggestions'][1]['fieldName'] ?? null);
         $this->assertSame('Content', $payload['suggestions'][1]['fieldLabel'] ?? null);
         $this->assertSame('', $payload['suggestions'][1]['targetTitle'] ?? null);
-        $this->assertSame('Draft content', $payload['suggestions'][1]['sourceContent'] ?? null);
+        $this->assertSame('<p>Draft content</p>', $payload['suggestions'][1]['sourceContent'] ?? null);
         $this->assertSame('<p>Rewritten section</p>', $payload['suggestions'][1]['suggestedContent'] ?? null);
         $this->assertSame('html', $payload['suggestions'][1]['contentFormat'] ?? null);
         $this->assertStringContainsString('<ins', $payload['suggestions'][1]['diffHtml'] ?? '');
@@ -445,9 +445,8 @@ class RefineControllerTest extends FunctionalTest
         $payload = json_decode((string) $response->getBody(), true);
         $sourceContent = $payload['suggestions'][1]['sourceContent'] ?? '';
         $diffHtml = $payload['suggestions'][1]['diffHtml'] ?? '';
-        $this->assertStringContainsString('First paragraph', $sourceContent);
-        $this->assertStringContainsString('Second paragraph', $sourceContent);
-        $this->assertStringNotContainsString('<p>', $sourceContent);
+        $this->assertStringContainsString('<p>First paragraph</p>', $sourceContent);
+        $this->assertStringContainsString('<p>Second paragraph</p>', $sourceContent);
         $this->assertSame(2, substr_count($diffHtml, '<del>'));
         $this->assertSame(2, substr_count($diffHtml, '<ins>'));
         $this->assertStringContainsString('</p>', $diffHtml);

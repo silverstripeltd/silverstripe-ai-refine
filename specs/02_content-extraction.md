@@ -40,9 +40,9 @@ Each rewrite target carries:
 - `targetType` - one of `page_title`, `page_content`, `element_html`, or `element_text`
 - `fieldName` - ORM field to write back to
 - `targetId` - page or element ID where applicable
-- `sourceContent` - the plain-text source content shown in the modal
+- `sourceContent` - the source content sent to the AI provider and shown in the modal
 
-For rewrite targets only, HTML fields are normalised with `Convert::html2raw()` plus whitespace collapsing so the model sees cleaner input without changing the flat hash payload. Plain text fields also have whitespace normalised before prompting and apply review.
+For rewrite targets, HTML-type fields (`page_content` and `element_html`) retain their raw HTML so the AI can preserve heading levels, lists, links, and inline formatting when rewriting. Plain text fields have whitespace normalised before prompting and apply review. The flat evaluation payload (used for hashing and empty-content checks) is still stripped to plain text.
 
 ### Non-elemental pages
 

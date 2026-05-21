@@ -137,7 +137,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         $this->assertSame('Content', $result->suggestions[1]->fieldName);
         $this->assertSame('Content', $result->suggestions[1]->fieldLabel);
         $this->assertSame('', $result->suggestions[1]->targetTitle);
-        $this->assertSame('Draft body', $result->suggestions[1]->sourceContent);
+        $this->assertSame('<p>Draft body</p>', $result->suggestions[1]->sourceContent);
         $this->assertSame('<p>Draft body</p>', $result->suggestions[1]->getDiffSourceContent());
         $this->assertSame('<p>Updated draft body</p>', $result->suggestions[1]->suggestedContent);
         $this->assertSame(1, $provider->evaluationCallCount);
