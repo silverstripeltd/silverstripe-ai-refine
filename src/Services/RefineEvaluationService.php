@@ -2,9 +2,9 @@
 
 namespace SilverstripeLtd\AiRefine\Services;
 
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderFactory;
 use SilverstripeLtd\AiRefine\Models\RefineAnalysis;
-use SilverstripeLtd\AiRefine\Providers\ProviderFactory;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineExtractedContent;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
@@ -20,18 +20,20 @@ class RefineEvaluationService
 {
     private ContentExtractionService $contentExtractionService;
 
-    private ProviderFactory $providerFactory;
+    private RefineCompletionService $completionService;
 
     /**
-     * Builds the evaluation service with injectable extraction and provider dependencies.
+     * Builds the evaluation service with injectable extraction, provider and completion dependencies.
      */
     public function __construct(
         ?ContentExtractionService $contentExtractionService = null,
-        ?ProviderFactory $providerFactory = null
+        ?ProviderFactory $providerFactory = null,
+        ?RefineCompletionService $completionService = null
     ) {
         $this->contentExtractionService = $contentExtractionService
             ?: Injector::inst()->get(ContentExtractionService::class);
-        $this->providerFactory = $providerFactory ?: Injector::inst()->get(ProviderFactory::class);
+        $this->completionService = $completionService
+            ?: RefineCompletionService::create(null, $providerFactory);
     }
 
     /**
@@ -150,14 +152,12 @@ class RefineEvaluationService
         string $refineDefinition,
         RefineExtractedContent $extracted
     ): RefineFullResult {
-        return $this->providerFactory
-            ->getProvider()
-            ->evaluateRefine(
-                $extracted->content,
-                $this->getRecordTitle($record),
-                $refineDefinition,
-                $extracted->rewriteTargets
-            );
+        return $this->completionService->evaluateRefine(
+            $extracted->content,
+            $this->getRecordTitle($record),
+            $refineDefinition,
+            $extracted->rewriteTargets
+        );
     }
 
     /**
@@ -177,7 +177,7 @@ class RefineEvaluationService
     /**
      * Validates provider suggestions against extracted targets and fills in local metadata.
      *
-     * @throws AIProviderException
+     * @throws ProviderException
      */
     private function resolveSuggestions(array $suggestions, array $rewriteTargets): array
     {
@@ -189,19 +189,19 @@ class RefineEvaluationService
         foreach ($suggestions as $suggestion) {
             $target = $targetsByKey[$suggestion->targetKey] ?? null;
             if (!$target) {
-                throw new AIProviderException(sprintf(
+                throw new ProviderException(sprintf(
                     'AI provider response referenced unexpected target %s',
                     $suggestion->targetKey
                 ));
             }
             if ($suggestion->targetType !== $target->targetType) {
-                throw new AIProviderException(sprintf(
+                throw new ProviderException(sprintf(
                     'AI provider response returned the wrong targetType for %s',
                     $suggestion->targetKey
                 ));
             }
             if (isset($resolved[$suggestion->targetKey])) {
-                throw new AIProviderException(sprintf(
+                throw new ProviderException(sprintf(
                     'AI provider response contains duplicate suggestions for target %s',
                     $suggestion->targetKey
                 ));
@@ -210,7 +210,7 @@ class RefineEvaluationService
         }
         foreach ($rewriteTargets as $target) {
             if (!isset($resolved[$target->targetKey])) {
-                throw new AIProviderException(sprintf(
+                throw new ProviderException(sprintf(
                     'AI provider response missing suggestion for target %s',
                     $target->targetKey
                 ));

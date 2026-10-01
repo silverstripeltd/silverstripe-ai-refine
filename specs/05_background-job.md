@@ -56,8 +56,8 @@ This is an intentional tradeoff. Even though the background job does not store r
 
 ## Error handling
 
-- **Non-fatal provider exceptions** (`AIProviderException` with `fatal = false`): Log the error, skip the page, continue to next. These are transient or page-specific failures (timeouts, rate limits, malformed responses).
-- **Fatal provider exceptions** (`AIProviderException` with `fatal = true`): Job stops immediately. These indicate broken configuration (missing/invalid API key, authentication failure) that will affect every page. Error is visible in the Queued Jobs CMS interface. The job re-queues a fresh instance so it can be retried after configuration is fixed.
+- **Non-blocking provider exceptions** (`ProviderException` that is not blocking): Log the error, skip the page, continue to next. These are transient or page-specific failures (timeouts, rate limits, malformed responses).
+- **Blocking provider exceptions** (`ProviderException::isBlocking()` is true): Job stops immediately. These indicate broken configuration (missing/invalid API key, authentication failure) that will affect every page. Error is visible in the Queued Jobs CMS interface. The job re-queues a fresh instance so it can be retried after configuration is fixed.
 - **Other per-page errors:** Log the error, skip the page, continue to next.
 
 ## Logging

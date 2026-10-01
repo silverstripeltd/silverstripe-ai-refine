@@ -4,7 +4,7 @@ namespace SilverstripeLtd\AiRefine\Controllers;
 
 use DOMElement;
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
 use SilverstripeLtd\AiRefine\Exceptions\RefineApplyException;
 use SilverstripeLtd\AiRefine\Extensions\RefineSiteTreeExtension;
 use SilverstripeLtd\AiRefine\Forms\RefineCheckForm;
@@ -129,7 +129,7 @@ class RefineController extends FormSchemaController
         }
         try {
             $result = $this->getEvaluationService()->evaluateDraft($record, $refineDefinition);
-        } catch (AIProviderException $exception) {
+        } catch (ProviderException $exception) {
             $this->logProviderException($exception, $record);
             return $this->jsonResponse([
                 'error' => $this->getProviderErrorMessage($exception),
@@ -592,7 +592,7 @@ class RefineController extends FormSchemaController
     /**
      * Chooses the provider error message that is safe to expose to the current environment.
      */
-    private function getProviderErrorMessage(AIProviderException $exception): string
+    private function getProviderErrorMessage(ProviderException $exception): string
     {
         if ($this->shouldExposeProviderErrors()) {
             return $exception->getMessage();
@@ -612,7 +612,7 @@ class RefineController extends FormSchemaController
     /**
      * Logs the original provider exception with record context for debugging.
      */
-    private function logProviderException(AIProviderException $exception, DataObject $record): void
+    private function logProviderException(ProviderException $exception, DataObject $record): void
     {
         $this->getLogger()->error('Refine provider request failed', [
             'exception' => $exception,

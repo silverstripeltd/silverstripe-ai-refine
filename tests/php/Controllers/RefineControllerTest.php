@@ -5,20 +5,20 @@ namespace SilverstripeLtd\AiRefine\Tests\Controllers;
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use DNADesign\Elemental\Models\ElementContent;
 use Psr\Log\LoggerInterface;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderFactory;
+use SilverstripeLtd\AiCore\Testing\ScriptedProvider;
+use SilverstripeLtd\AiCore\Testing\StubProviderFactory;
 use SilverstripeLtd\AiRefine\Controllers\RefineController;
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
 use SilverstripeLtd\AiRefine\Forms\RefineCheckForm;
 use SilverstripeLtd\AiRefine\Models\RefineAnalysis;
-use SilverstripeLtd\AiRefine\Providers\ProviderFactory;
 use SilverstripeLtd\AiRefine\Services\RefineCheckRateLimiter;
 use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
 use SilverstripeLtd\AiRefine\Tests\CETestElementalPage;
 use SilverstripeLtd\AiRefine\Tests\CETestLockedElement;
 use SilverstripeLtd\AiRefine\Tests\CETestUntemplatedBlock;
+use SilverstripeLtd\AiRefine\Tests\RefineReplies;
 use SilverstripeLtd\AiRefine\Tests\RestrictedRefinePage;
-use SilverstripeLtd\AiRefine\Tests\StubProvider;
-use SilverstripeLtd\AiRefine\Tests\StubProviderFactory;
-use SilverstripeLtd\AiRefine\Tests\TestAIProvider;
 use SilverstripeLtd\AiRefine\Tests\TestLogger;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
@@ -55,7 +55,7 @@ class RefineControllerTest extends FunctionalTest
         ],
     ];
 
-    private StubProvider $provider;
+    private ScriptedProvider $provider;
 
     private LoggerInterface $originalLogger;
 
@@ -74,7 +74,7 @@ class RefineControllerTest extends FunctionalTest
         $this->logger = new TestLogger();
         Injector::inst()->registerService($this->logger, LoggerInterface::class);
 
-        $this->provider = new StubProvider(
+        $this->provider = RefineReplies::repeating(
             new RefineFullResult('Good', 'Mostly aligned.', [
                 new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated check page'),
                 new RefineSuggestion('page:content', 'page_content', '', null, '', '<p>Rewritten section</p>'),
@@ -102,7 +102,7 @@ class RefineControllerTest extends FunctionalTest
         $siteConfig->write();
 
         Injector::inst()->registerService($this->originalLogger, LoggerInterface::class);
-        Injector::inst()->registerService(new ProviderFactory(), ProviderFactory::class);
+        Injector::inst()->unregisterNamedObject(ProviderFactory::class);
 
         parent::tearDown();
     }
@@ -308,7 +308,7 @@ class RefineControllerTest extends FunctionalTest
         $this->assertStringContainsString('<ins', $payload['suggestions'][1]['diffHtml'] ?? '');
         $this->assertStringContainsString('Rewritten section', $payload['suggestions'][1]['diffHtml'] ?? '');
         $this->assertArrayNotHasKey('fieldScaffold', $payload['suggestions'][1] ?? []);
-        $this->assertSame(1, $this->provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($this->provider));
         $this->assertSame(
             0,
             RefineAnalysis::get()->filter([
@@ -347,7 +347,7 @@ class RefineControllerTest extends FunctionalTest
             'Too many AI refine requests for this page.',
             $payload['error'] ?? ''
         );
-        $this->assertSame(1, $this->provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($this->provider));
     }
 
     /**
@@ -379,7 +379,7 @@ class RefineControllerTest extends FunctionalTest
         $this->assertSame(200, $firstResponse->getStatusCode());
         $this->assertSame(200, $secondResponse->getStatusCode());
         $this->assertSame(429, $repeatFirstResponse->getStatusCode());
-        $this->assertSame(2, $this->provider->evaluationCallCount);
+        $this->assertSame(2, RefineReplies::callCount($this->provider));
     }
 
     /**
@@ -413,7 +413,7 @@ class RefineControllerTest extends FunctionalTest
         $this->assertSame(429, $secondResponse->getStatusCode());
         $this->assertSame('1', $secondResponse->getHeader('Retry-After'));
         $this->assertSame(200, $thirdResponse->getStatusCode());
-        $this->assertSame(2, $this->provider->evaluationCallCount);
+        $this->assertSame(2, RefineReplies::callCount($this->provider));
     }
 
     /**
@@ -422,7 +422,7 @@ class RefineControllerTest extends FunctionalTest
     public function testCheckEndpointPreservesOriginalHtmlStructureInDiffs(): void
     {
         $page = $this->createPage('Diff page', '<p>First paragraph</p><p>Second paragraph</p>');
-        $provider = new StubProvider(new RefineFullResult('Good', 'Mostly aligned.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('Good', 'Mostly aligned.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Diff page'),
             new RefineSuggestion(
                 'page:content',
@@ -458,7 +458,7 @@ class RefineControllerTest extends FunctionalTest
     public function testCheckEndpointSanitisesDiffHtml(): void
     {
         $page = $this->createPage('Unsafe diff page', '<p>Current paragraph</p>');
-        $provider = new StubProvider(new RefineFullResult('Good', 'Needs a safer rewrite.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('Good', 'Needs a safer rewrite.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Unsafe diff page'),
             new RefineSuggestion(
                 'page:content',
@@ -500,7 +500,7 @@ class RefineControllerTest extends FunctionalTest
     public function testCheckEndpointStripsSuggestionsForExcellentResults(): void
     {
         $page = $this->createPage('Excellent page', '<p>Draft content</p>');
-        $provider = new StubProvider(new RefineFullResult('Excellent', 'Fully aligned.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('Excellent', 'Fully aligned.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Excellent page'),
             new RefineSuggestion('page:content', 'page_content', '', null, '', '<p>Updated content</p>'),
         ]));
@@ -518,7 +518,7 @@ class RefineControllerTest extends FunctionalTest
         $this->assertSame('Excellent', $payload['ratingLabel'] ?? null);
         $this->assertSame('Fully aligned.', $payload['reasoningSummary'] ?? null);
         $this->assertSame([], $payload['suggestions'] ?? null);
-        $this->assertSame(1, $provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($provider));
     }
 
     /**
@@ -527,7 +527,7 @@ class RefineControllerTest extends FunctionalTest
     public function testCheckEndpointReturnsDisplayLabelForNeedsWorkRating(): void
     {
         $page = $this->createPage('Needs work page', '<p>Draft content</p>');
-        $provider = new StubProvider(new RefineFullResult('NeedsWork', 'Needs work reasoning.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('NeedsWork', 'Needs work reasoning.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated needs work page'),
             new RefineSuggestion('page:content', 'page_content', '', null, '', '<p>Updated content</p>'),
         ]));
@@ -568,7 +568,7 @@ class RefineControllerTest extends FunctionalTest
             'No refine has been defined. Configure your refine in Settings > Refine.',
             $payload['error'] ?? null
         );
-        $this->assertSame(0, $this->provider->evaluationCallCount);
+        $this->assertSame(0, RefineReplies::callCount($this->provider));
     }
 
     /**
@@ -636,7 +636,7 @@ class RefineControllerTest extends FunctionalTest
     public function testCheckEndpointUsesGenericProviderErrorInTests(): void
     {
         $page = $this->createPage('Provider page', '<p>Draft content</p>');
-        $provider = new StubProvider(null, new AIProviderException('Provider boom', true));
+        $provider = RefineReplies::repeating(null, ProviderException::blocking('Provider boom'));
         Injector::inst()->registerService(new StubProviderFactory($provider), ProviderFactory::class);
 
         $response = $this->post(
@@ -683,7 +683,7 @@ class RefineControllerTest extends FunctionalTest
         $supportedElement = $page->ElementalArea()->Elements()
             ->filter('ClassName', ElementContent::class)
             ->first();
-        $provider = new StubProvider(new RefineFullResult('Good', 'Mostly aligned.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('Good', 'Mostly aligned.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated mixed blocks page'),
             new RefineSuggestion(
                 sprintf('element:%d:field:title', $customElement->ID),
@@ -843,35 +843,32 @@ class RefineControllerTest extends FunctionalTest
 
             /** @var CETestUntemplatedBlock $customElement */
             $customElement = $page->ElementalArea()->Elements()->first();
-            $provider = new TestAIProvider([
-                [
-                    'status' => 200,
-                    'body' => json_encode([
-                        'rating' => 'NeedsWork',
-                        'reasoningSummary' => 'The first block sounds clumsy and off-brand.',
-                        'suggestions' => [
-                            [
-                                'targetKey' => 'page:title',
-                                'targetType' => 'page_title',
-                                'suggestedContent' => 'Broken blocks page',
-                            ],
-                            [
-                                'targetKey' => sprintf('element:%d:field:title', $customElement->ID),
-                                'targetType' => 'element_text',
-                                'suggestedContent' => 'Improved first block heading',
-                            ],
-                            [
-                                'targetKey' => sprintf('element:%d:field:myfield', $customElement->ID),
-                                'suggestedContent' => 'A clearer introduction that matches the refine',
-                            ],
-                            [
-                                'targetKey' => sprintf('element:%d:field:mybigfield', $customElement->ID),
-                                'targetType' => 'element_text',
-                                'suggestedContent' => 'Supporting copy that stays direct and consistent',
-                            ],
+            $provider = RefineReplies::sequence([
+                json_encode([
+                    'rating' => 'NeedsWork',
+                    'reasoningSummary' => 'The first block sounds clumsy and off-brand.',
+                    'suggestions' => [
+                        [
+                            'targetKey' => 'page:title',
+                            'targetType' => 'page_title',
+                            'suggestedContent' => 'Broken blocks page',
                         ],
-                    ], JSON_UNESCAPED_SLASHES),
-                ],
+                        [
+                            'targetKey' => sprintf('element:%d:field:title', $customElement->ID),
+                            'targetType' => 'element_text',
+                            'suggestedContent' => 'Improved first block heading',
+                        ],
+                        [
+                            'targetKey' => sprintf('element:%d:field:myfield', $customElement->ID),
+                            'suggestedContent' => 'A clearer introduction that matches the refine',
+                        ],
+                        [
+                            'targetKey' => sprintf('element:%d:field:mybigfield', $customElement->ID),
+                            'targetType' => 'element_text',
+                            'suggestedContent' => 'Supporting copy that stays direct and consistent',
+                        ],
+                    ],
+                ], JSON_UNESCAPED_SLASHES),
             ]);
             Injector::inst()->registerService(new StubProviderFactory($provider), ProviderFactory::class);
 

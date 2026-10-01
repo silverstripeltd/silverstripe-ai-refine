@@ -23,3 +23,26 @@ SilverStripe\Admin\LeftAndMain:
       defer: true
   extra_requirements_css:
     - 'silverstripeltd/ai-refine:client/dist/styles/bundle.css'
+
+---
+Name: ai-refine-provider
+After: '#ai-core'
+---
+# Provider defaults for this module. AI_REFINE_* environment variables win, then the shared
+# AI_* variables, then these values.
+SilverstripeLtd\AiCore\Settings\EnvProviderSettings:
+  modules:
+    REFINE:
+      provider: gemini
+      max_tokens: 20000
+      request_timeout: 15
+      temperature: 0.0
+      providers:
+        anthropic:
+          model: claude-haiku-4-5
+        openai:
+          model: gpt-5-mini
+          temperature: 1.0
+        gemini:
+          model: gemini-3.1-flash-lite
+          thinking_level: low

@@ -3,7 +3,7 @@
 namespace SilverstripeLtd\AiRefine\Jobs;
 
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
 use SilverstripeLtd\AiRefine\Services\RefineEvaluationService;
 use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
 use SilverStripe\CMS\Model\SiteTree;
@@ -221,7 +221,7 @@ class EvaluateRefineJob extends AbstractQueuedJob
                 $this->getPageTitle($page)
             ));
             return ['countForBatch' => true, 'delay' => true];
-        } catch (AIProviderException $exception) {
+        } catch (ProviderException $exception) {
             $this->failedCount++;
             $this->logger()->error(sprintf(
                 'Refine job: page %d (%s) failed: %s',
@@ -230,7 +230,7 @@ class EvaluateRefineJob extends AbstractQueuedJob
                 $exception->getMessage()
             ));
 
-            if ($exception->isFatal()) {
+            if ($exception->isBlocking()) {
                 $this->addMessage(
                     sprintf('Fatal provider failure for page %d: %s', $page->ID, $exception->getMessage()),
                     'ERROR'

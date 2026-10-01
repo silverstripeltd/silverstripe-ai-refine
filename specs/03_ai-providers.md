@@ -2,19 +2,14 @@
 
 ## Provider abstraction
 
-The module includes a provider abstraction layer supporting multiple AI providers. One provider is active at a time, selected via environment variable. The module ships with three built-in providers:
-
-- **Gemini** - primary provider (default). Calls the v1beta `generateContent` endpoint and includes `thinkingConfig.thinkingLevel` when `AI_REFINE_THINKING_LEVEL` is not `none`.
-- **OpenAI** - Chat Completions API provider
-- **Anthropic** - Messages API provider
-- **Custom providers** - the built-in factory supports `gemini`, `openai`, and `anthropic` only. To use a custom provider, projects must override the factory via Silverstripe's Injector.
+Provider calls go through the shared `silverstripeltd/silverstripe-ai-core` package, which ships the Gemini (default here), OpenAI and Anthropic providers. One provider is active at a time, selected via environment variable. Custom providers are registered in the ai-core `ProviderFactory.providers` YAML map.
 
 ## Provider interface
 
-All providers extend `AbstractAIProvider`, which supplies the evaluation methods and shared error handling. Concrete providers implement protected request hooks (`performRequest`, `extractResponseContent`, `isTransientStatus`, and `getDefaultModel`). HTTP requests are made with Guzzle (bundled with Silverstripe framework) and respect configured timeouts.
+`RefineCompletionService` builds the evaluation prompts, sends them through ai-core's `JsonCompletion` with `EnvProviderSettings::forModule('REFINE')`, and parses the reply (with recovery of JSON wrapped in prose or code fences). HTTP requests respect the configured timeout and are never retried.
 
 ```php
-abstract class AbstractAIProvider
+class RefineCompletionService
 {
     /**
      * Evaluate page content against a refine definition.
@@ -67,15 +62,15 @@ The provider parses `targetKey`, `targetType`, and `suggestedContent` directly f
 
 ## Configuration
 
-All configuration via environment variables:
+All configuration via environment variables. Each provider variable falls back to the shared `AI_*` variable of the same name (for example `AI_API_KEY`), then to the module defaults in `_config/config.yml` (`EnvProviderSettings.modules.REFINE`):
 
 | Environment variable | Description | Default |
 |---|---|---|
 | `AI_REFINE_PROVIDER` | Active provider (`gemini`, `openai`, `anthropic`) | `gemini` |
 | `AI_REFINE_API_KEY` | API key for the active provider | (required) |
-| `AI_REFINE_MODEL` | Model to use | Provider-specific default |
-| `AI_REFINE_THINKING_LEVEL` | Thinking level for Gemini | `low` |
-| `AI_REFINE_TEMPERATURE` | Temperature for generation | `0.0` |
+| `AI_REFINE_MODEL` | Model to use | `gemini-3.1-flash-lite`, `gpt-5-mini` or `claude-haiku-4-5` |
+| `AI_REFINE_THINKING_LEVEL` | Thinking level, sent to whichever provider is active | `low` for Gemini, unset otherwise |
+| `AI_REFINE_TEMPERATURE` | Temperature for generation | `0.0` (`1.0` for OpenAI, whose GPT-5 models accept no other value) |
 | `AI_REFINE_MAX_TOKENS` | Max tokens in response for the shared evaluation prompt | `20000` |
 | `AI_REFINE_REQUEST_TIMEOUT` | Request timeout in seconds | `15` |
 | `AI_REFINE_RATE_LIMIT_DELAY` | Delay between API calls (background job) | `6` |
@@ -88,18 +83,19 @@ All configuration via environment variables:
 
 ## Error handling
 
-- **Transient failures** (network timeout, rate limit, 5xx): Throw `AIProviderException` immediately (no retry)
-- **Permanent failures** (invalid API key, 4xx non-rate-limit): Throw `AIProviderException` immediately
-- **Malformed response** (invalid JSON, missing required keys): Throw `AIProviderException`
+Every failure is an ai-core `SilverstripeLtd\AiCore\Provider\ProviderException`, thrown immediately (no retry):
+
+- **Transient failures** (network timeout, rate limit, 5xx): `isTransient()` is true
+- **Permanent failures** (4xx non-rate-limit, malformed JSON, missing required keys): neither flag is set
 
 ### Error classification
 
-`AIProviderException` carries a `fatal` flag to distinguish configuration errors from per-page errors:
+`ProviderException::isBlocking()` distinguishes configuration errors from per-page errors:
 
-- **Fatal** (`fatal = true`): Missing or invalid API key, authentication failure (401/403 from the provider). These indicate broken configuration that will affect every page - there is no point continuing.
-- **Non-fatal** (`fatal = false`): Network timeouts, rate limits, 5xx errors, malformed responses. These are transient or page-specific and the caller can skip and continue.
+- **Blocking**: Missing or invalid API key, authentication failure (401/403 from the provider), an unknown provider name or an invalid setting. These indicate broken configuration that will affect every page - there is no point continuing.
+- **Not blocking**: Network timeouts, rate limits, 5xx errors, malformed responses. These are transient or page-specific and the caller can skip and continue.
 
 ### Caller behaviour
 
-- **CMS modal:** Shows a toast notification for any `AIProviderException`
-- **Background job:** Checks the `fatal` flag. Fatal exceptions stop the job immediately and trigger re-queue (see `specs/05_background-job.md`). Non-fatal exceptions are logged, the page is skipped, and processing continues.
+- **CMS modal:** Shows a toast notification for any `ProviderException`
+- **Background job:** Checks `isBlocking()`. Blocking exceptions stop the job immediately and trigger re-queue (see `specs/05_background-job.md`). Other exceptions are logged, the page is skipped, and processing continues.
