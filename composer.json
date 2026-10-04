@@ -19,6 +19,12 @@
         "slevomat/coding-standard": "^8",
         "guzzlehttp/guzzle": "^7.0"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/silverstripeltd/silverstripe-ai-core"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "SilverstripeLtd\\AiRefine\\": "src/"
