@@ -2,13 +2,14 @@
 
 namespace SilverstripeLtd\AiRefine\Tests\Jobs;
 
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
+use SilverstripeLtd\AiCore\Testing\ScriptedProvider;
+use SilverstripeLtd\AiCore\Testing\StubProviderFactory;
 use SilverstripeLtd\AiRefine\Jobs\EvaluateRefineJob;
 use SilverstripeLtd\AiRefine\Models\RefineAnalysis;
 use SilverstripeLtd\AiRefine\Services\RefineEvaluationService;
 use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
-use SilverstripeLtd\AiRefine\Tests\SequenceStubProvider;
-use SilverstripeLtd\AiRefine\Tests\StubProviderFactory;
+use SilverstripeLtd\AiRefine\Tests\RefineReplies;
 use SilverstripeLtd\AiRefine\Tests\TestLogger;
 use SilverstripeLtd\AiRefine\Tests\TestQueuedJobService;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
@@ -60,7 +61,7 @@ class EvaluateRefineJobTest extends SapphireTest
     public function testJobSkipsAllPagesWhenNoRefineConfigured(): void
     {
         $queue = new TestQueuedJobService();
-        $job = $this->createJob(new SequenceStubProvider(), $queue, new TestLogger());
+        $job = $this->createJob(RefineReplies::sequence([]), $queue, new TestLogger());
 
         $job->process();
 
@@ -105,7 +106,7 @@ class EvaluateRefineJobTest extends SapphireTest
         $stale->write();
         $stale->publishSingle();
 
-        $provider = new SequenceStubProvider([
+        $provider = RefineReplies::sequence([
             new RefineFullResult('Poor', 'Needs work', []),
         ]);
         $queue = new TestQueuedJobService();
@@ -117,7 +118,7 @@ class EvaluateRefineJobTest extends SapphireTest
         $this->assertSame(3, $job->processedCount);
         $this->assertSame(1, $job->succeededCount);
         $this->assertSame(2, $job->skippedCount);
-        $this->assertSame(1, $provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($provider));
         $this->assertSame(1, count($queue->queuedJobs));
         $this->assertSame('Poor', $stale->getRefineAnalysis()->Rating);
         $this->assertSame($currentHash, $upToDate->getRefineAnalysis()->ContentHash);
@@ -138,7 +139,7 @@ class EvaluateRefineJobTest extends SapphireTest
         $page->write();
         $page->publishSingle();
 
-        $provider = new SequenceStubProvider([
+        $provider = RefineReplies::sequence([
             new RefineFullResult('Excellent', 'Now substantial enough', []),
         ]);
         $queue = new TestQueuedJobService();
@@ -151,14 +152,14 @@ class EvaluateRefineJobTest extends SapphireTest
         $this->assertSame('Insufficient content', $analysis->GenerationNote);
         $this->assertSame(md5(''), $analysis->ContentHash);
         $this->assertNull($analysis->Rating);
-        $this->assertSame(0, $provider->evaluationCallCount);
+        $this->assertSame(0, RefineReplies::callCount($provider));
 
         $secondJob = $this->createJob($provider, new TestQueuedJobService(), new TestLogger());
         $this->runJob($secondJob);
 
         $analysis = $page->getRefineAnalysis();
         $this->assertSame($firstAnalysedAt, $analysis->AnalysedAt);
-        $this->assertSame(0, $provider->evaluationCallCount);
+        $this->assertSame(0, RefineReplies::callCount($provider));
 
         $page->Title = 'Now substantial';
         $page->Content = '<p>Enough published content to evaluate now.</p>';
@@ -171,7 +172,7 @@ class EvaluateRefineJobTest extends SapphireTest
         $analysis = $page->getRefineAnalysis();
         $this->assertSame('Excellent', $analysis->Rating);
         $this->assertNull($analysis->GenerationNote);
-        $this->assertSame(1, $provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($provider));
     }
 
     /**
@@ -185,8 +186,8 @@ class EvaluateRefineJobTest extends SapphireTest
         $firstPage = $this->createPublishedPage('First page', '<p>First body</p>');
         $secondPage = $this->createPublishedPage('Second page', '<p>Second body</p>');
 
-        $provider = new SequenceStubProvider([
-            new AIProviderException('Temporary upstream issue', false),
+        $provider = RefineReplies::sequence([
+            new ProviderException('Temporary upstream issue'),
             new RefineFullResult('Good', 'Recovered', []),
         ]);
         $queue = new TestQueuedJobService();
@@ -195,7 +196,7 @@ class EvaluateRefineJobTest extends SapphireTest
         $this->runJob($job);
 
         $this->assertTrue($job->jobFinished());
-        $this->assertSame(2, $provider->evaluationCallCount);
+        $this->assertSame(2, RefineReplies::callCount($provider));
         $this->assertSame(1, $job->failedCount);
         $this->assertSame(1, $job->succeededCount);
         $firstAnalysis = $firstPage->getRefineAnalysis();
@@ -215,19 +216,19 @@ class EvaluateRefineJobTest extends SapphireTest
         $firstPage = $this->createPublishedPage('Fatal page', '<p>Fatal body</p>');
         $secondPage = $this->createPublishedPage('Unreached page', '<p>Second body</p>');
 
-        $provider = new SequenceStubProvider([
-            new AIProviderException('Invalid API key', true),
+        $provider = RefineReplies::sequence([
+            ProviderException::blocking('Invalid API key'),
             new RefineFullResult('Good', 'Should not run', []),
         ]);
         $queue = new TestQueuedJobService();
         $job = $this->createJob($provider, $queue, new TestLogger());
 
-        $this->expectException(AIProviderException::class);
+        $this->expectException(ProviderException::class);
         try {
             $job->process();
         } finally {
             $this->assertFalse($job->jobFinished());
-            $this->assertSame(1, $provider->evaluationCallCount);
+            $this->assertSame(1, RefineReplies::callCount($provider));
             $this->assertSame(1, $job->failedCount);
             $this->assertSame(1, count($queue->queuedJobs));
             $firstAnalysis = $firstPage->getRefineAnalysis();
@@ -240,7 +241,7 @@ class EvaluateRefineJobTest extends SapphireTest
      * Creates a job with stubbed services and a no-op sleep handler.
      */
     private function createJob(
-        SequenceStubProvider $provider,
+        ScriptedProvider $provider,
         TestQueuedJobService $queue,
         TestLogger $logger
     ): EvaluateRefineJob {

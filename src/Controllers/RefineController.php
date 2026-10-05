@@ -3,31 +3,27 @@
 namespace SilverstripeLtd\AiRefine\Controllers;
 
 use DOMElement;
-use DNADesign\Elemental\Models\BaseElement;
-use SilverStripe\Forms\HTMLEditor\HTMLEditorConfig;
-use SilverStripe\Forms\HTMLEditor\HTMLEditorSanitiser;
 use Psr\Log\LoggerInterface;
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
+use SilverstripeLtd\AiRefine\Exceptions\RefineApplyException;
 use SilverstripeLtd\AiRefine\Extensions\RefineSiteTreeExtension;
 use SilverstripeLtd\AiRefine\Forms\RefineCheckForm;
 use SilverstripeLtd\AiRefine\Models\RefineAnalysis;
+use SilverstripeLtd\AiRefine\Services\RefineApplyService;
 use SilverstripeLtd\AiRefine\Services\RefineEvaluationService;
 use SilverstripeLtd\AiRefine\Services\RefineCheckRateLimiter;
 use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
-use SilverstripeLtd\AiRefine\ValueObjects\RefineRewriteTarget;
+use SilverstripeLtd\AiRefine\ValueObjects\RefineApplyResult;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 use SilverStripe\Admin\FormSchemaController;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
-use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Core\XssSanitiser;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\FieldType\DBHTMLText;
-use SilverStripe\ORM\FieldType\DBHTMLVarchar;
 use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\SiteConfig\SiteConfig;
@@ -133,7 +129,7 @@ class RefineController extends FormSchemaController
         }
         try {
             $result = $this->getEvaluationService()->evaluateDraft($record, $refineDefinition);
-        } catch (AIProviderException $exception) {
+        } catch (ProviderException $exception) {
             $this->logProviderException($exception, $record);
             return $this->jsonResponse([
                 'error' => $this->getProviderErrorMessage($exception),
@@ -178,19 +174,15 @@ class RefineController extends FormSchemaController
         try {
             $result = $this->withDraftStage(
                 $record,
-                fn(DataObject $draftRecord): array => $this->applySuggestionsToDraft(
+                fn(DataObject $draftRecord): RefineApplyResult => $this->getApplyService()->applyToDraft(
                     $draftRecord,
                     $suggestions
                 )
             );
-        } catch (HTTPResponse_Exception $exception) {
-            return $exception->getResponse();
+        } catch (RefineApplyException $exception) {
+            return $this->jsonResponse(['error' => RefineCheckForm::APPLY_FAILURE_MESSAGE], 403);
         }
-        return $this->jsonResponse([
-            'appliedCount' => $result['appliedCount'],
-            'skippedCount' => $result['skippedCount'],
-            'reloadRequired' => $result['appliedCount'] > 0,
-        ]);
+        return $this->jsonResponse($result->toArray());
     }
 
     /**
@@ -445,397 +437,6 @@ class RefineController extends FormSchemaController
     }
 
     /**
-     * Applies the selected suggestions to the current draft record and its owned elements.
-     */
-    private function applySuggestionsToDraft(DataObject $record, array $suggestions): array
-    {
-        $rewriteTargetsByKey = $this->getRewriteTargetsByKey($record);
-        $pageElementalAreaIds = $this->getElementalAreaIds($record);
-        $resolvedSuggestions = [];
-        $seenTargetKeys = [];
-        $pageRequiresWrite = false;
-        $appliedCount = 0;
-        $skippedCount = 0;
-
-        foreach ($suggestions as $index => $suggestion) {
-            if (!is_array($suggestion)) {
-                $this->logApplySkip($record, 'invalid-payload', $index);
-                $skippedCount++;
-                continue;
-            }
-
-            if (!$this->shouldApplySuggestion($suggestion)) {
-                continue;
-            }
-
-            $resolvedSuggestion = $this->resolveApplicableSuggestion(
-                $record,
-                $suggestion,
-                $rewriteTargetsByKey,
-                $pageElementalAreaIds,
-                $index,
-                $seenTargetKeys
-            );
-            if (!$resolvedSuggestion) {
-                $skippedCount++;
-                continue;
-            }
-            $resolvedSuggestions[] = [
-                'index' => $index,
-                'suggestedContent' => $resolvedSuggestion['suggestedContent'],
-                'target' => $resolvedSuggestion['target'],
-            ];
-        }
-
-        $this->assertEditableElementTargets($record, $resolvedSuggestions);
-
-        foreach ($resolvedSuggestions as $resolvedSuggestion) {
-            if (!$this->applyResolvedSuggestion(
-                $record,
-                $resolvedSuggestion['target'],
-                $resolvedSuggestion['suggestedContent'],
-                $pageElementalAreaIds,
-                $resolvedSuggestion['index'],
-                $pageRequiresWrite
-            )) {
-                $skippedCount++;
-                continue;
-            }
-
-            $appliedCount++;
-        }
-
-        if ($pageRequiresWrite) {
-            $record->write();
-        }
-        return [
-            'appliedCount' => $appliedCount,
-            'skippedCount' => $skippedCount,
-        ];
-    }
-
-    /**
-     * Fails the whole apply request when any selected block target cannot be edited.
-     */
-    private function assertEditableElementTargets(DataObject $record, array $resolvedSuggestions): void
-    {
-        $checkedElementIds = [];
-        foreach ($resolvedSuggestions as $resolvedSuggestion) {
-            /** @var RefineRewriteTarget $target */
-            $target = $resolvedSuggestion['target'];
-            if (!RefineRewriteTarget::isElementTargetType($target->targetType) || !$target->targetId) {
-                continue;
-            }
-            if (isset($checkedElementIds[$target->targetId])) {
-                continue;
-            }
-            $checkedElementIds[$target->targetId] = true;
-            $element = BaseElement::get()->setUseCache(false)->byID($target->targetId);
-            if ($element && !$element->canEdit()) {
-                $this->getLogger()->warning('Refine apply denied by block permissions', [
-                    'recordClass' => $record->ClassName,
-                    'recordId' => $record->ID,
-                    'targetId' => $target->targetId,
-                    'targetKey' => $target->targetKey,
-                ]);
-                $this->failRequest(403, RefineCheckForm::APPLY_FAILURE_MESSAGE);
-            }
-        }
-    }
-
-    /**
-     * Determines whether an incoming suggestion payload has been marked for apply.
-     */
-    private function shouldApplySuggestion(array $suggestion): bool
-    {
-        foreach (['apply', 'rewrite', 'shouldRewrite'] as $flag) {
-            if (!array_key_exists($flag, $suggestion)) {
-                continue;
-            }
-            return filter_var($suggestion[$flag], FILTER_VALIDATE_BOOLEAN);
-        }
-        return false;
-    }
-
-    /**
-     * Indexes current rewrite targets by their stable target key.
-     */
-    private function getRewriteTargetsByKey(DataObject $record): array
-    {
-        $targetsByKey = [];
-        foreach ($this->getContentExtractionService()->extractForDraftCheck($record)->rewriteTargets as $target) {
-            $targetsByKey[$target->targetKey] = $target;
-        }
-        return $targetsByKey;
-    }
-
-    /**
-     * Validates one selected apply payload entry and resolves it onto the current rewrite targets.
-     */
-    private function resolveApplicableSuggestion(
-        DataObject $record,
-        array $suggestion,
-        array $rewriteTargetsByKey,
-        array $pageElementalAreaIds,
-        int|string $index,
-        array &$seenTargetKeys
-    ): ?array {
-        $targetKey = trim((string) ($suggestion['targetKey'] ?? ''));
-        if ($targetKey === '') {
-            $this->logApplySkip($record, 'missing-target-key', $index);
-            return null;
-        }
-
-        if (isset($seenTargetKeys[$targetKey])) {
-            $this->logApplySkip($record, 'duplicate-target', $index, ['targetKey' => $targetKey]);
-            return null;
-        }
-
-        $suggestedContent = $suggestion['suggestedContent'] ?? null;
-        if (!is_string($suggestedContent)) {
-            $this->logApplySkip($record, 'missing-suggested-content', $index, ['targetKey' => $targetKey]);
-            return null;
-        }
-
-        $target = $rewriteTargetsByKey[$targetKey] ?? null;
-        if (!$target) {
-            $this->logApplySkip(
-                $record,
-                $this->resolveMissingTargetReason($suggestion, $pageElementalAreaIds),
-                $index,
-                ['targetKey' => $targetKey]
-            );
-            return null;
-        }
-
-        if (!$this->suggestionMatchesTarget($suggestion, $target)) {
-            $this->logApplySkip($record, 'target-metadata-mismatch', $index, ['targetKey' => $targetKey]);
-            return null;
-        }
-
-        $seenTargetKeys[$targetKey] = true;
-        return [
-            'target' => $target,
-            'suggestedContent' => $suggestedContent,
-        ];
-    }
-
-    /**
-     * Applies one validated suggestion to either the page record or an owned elemental block.
-     */
-    private function applyResolvedSuggestion(
-        DataObject $record,
-        RefineRewriteTarget $target,
-        string $suggestedContent,
-        array $pageElementalAreaIds,
-        int|string $index,
-        bool &$pageRequiresWrite
-    ): bool {
-        if (RefineRewriteTarget::isElementTargetType($target->targetType)) {
-            return $this->applyElementSuggestion(
-                $record,
-                $target,
-                $suggestedContent,
-                $pageElementalAreaIds,
-                $index
-            );
-        }
-        return $this->applyPageSuggestion($record, $target, $suggestedContent, $index, $pageRequiresWrite);
-    }
-
-    /**
-     * Verifies that the apply payload still matches the current rewrite target metadata.
-     */
-    private function suggestionMatchesTarget(array $suggestion, RefineRewriteTarget $target): bool
-    {
-        $payloadTargetType = $suggestion['targetType'] ?? null;
-        if (is_string($payloadTargetType)
-            && trim($payloadTargetType) !== ''
-            && trim($payloadTargetType) !== $target->targetType) {
-            return false;
-        }
-
-        $payloadFieldName = $suggestion['fieldName'] ?? null;
-        if (is_string($payloadFieldName)
-            && trim($payloadFieldName) !== ''
-            && trim($payloadFieldName) !== $target->fieldName) {
-            return false;
-        }
-
-        if (!array_key_exists('targetId', $suggestion)) {
-            return true;
-        }
-
-        $payloadTargetId = $suggestion['targetId'];
-        if ($payloadTargetId === null || $payloadTargetId === '') {
-            return $target->targetId === null;
-        }
-
-        if (!is_int($payloadTargetId) && !(is_string($payloadTargetId) && ctype_digit($payloadTargetId))) {
-            return false;
-        }
-        return (int) $payloadTargetId === $target->targetId;
-    }
-
-    /**
-     * Explains why a missing rewrite target should be treated as deleted, foreign, or mismatched.
-     */
-    private function resolveMissingTargetReason(array $suggestion, array $pageElementalAreaIds): string
-    {
-        $payloadTargetType = trim((string) ($suggestion['targetType'] ?? ''));
-        $payloadTargetId = $suggestion['targetId'] ?? null;
-
-        if (!RefineRewriteTarget::isElementTargetType($payloadTargetType)) {
-            return 'mismatched-target';
-        }
-
-        if (!is_int($payloadTargetId) && !(is_string($payloadTargetId) && ctype_digit($payloadTargetId))) {
-            return 'mismatched-target';
-        }
-
-        $element = BaseElement::get()->byID((int) $payloadTargetId);
-        if (!$element) {
-            return 'deleted-target';
-        }
-
-        if (!in_array((int) $element->ParentID, $pageElementalAreaIds, true)) {
-            return 'foreign-target';
-        }
-        return 'mismatched-target';
-    }
-
-    /**
-     * Writes a page-level suggestion to the draft record and defers the final write until the loop finishes.
-     */
-    private function applyPageSuggestion(
-        DataObject $record,
-        RefineRewriteTarget $target,
-        string $suggestedContent,
-        int|string $index,
-        bool &$pageRequiresWrite
-    ): bool {
-        if (!$record->hasField($target->fieldName)) {
-            $this->logApplySkip(
-                $record,
-                'missing-target-field',
-                $index,
-                ['targetKey' => $target->targetKey, 'fieldName' => $target->fieldName]
-            );
-            return false;
-        }
-        $record->setField(
-            $target->fieldName,
-            $this->sanitiseSuggestedContent($record, $target->fieldName, $suggestedContent)
-        );
-        $pageRequiresWrite = true;
-        return true;
-    }
-
-    /**
-     * Writes an element-level suggestion to draft content when the element is still valid.
-     */
-    private function applyElementSuggestion(
-        DataObject $record,
-        RefineRewriteTarget $target,
-        string $suggestedContent,
-        array $pageElementalAreaIds,
-        int|string $index
-    ): bool {
-        if (!$target->targetId) {
-            $this->logApplySkip($record, 'missing-target-id', $index, ['targetKey' => $target->targetKey]);
-            return false;
-        }
-
-        $element = BaseElement::get()->byID($target->targetId);
-        if (!$element) {
-            $this->logApplySkip($record, 'deleted-target', $index, ['targetKey' => $target->targetKey]);
-            return false;
-        }
-
-        if (!in_array((int) $element->ParentID, $pageElementalAreaIds, true)) {
-            $this->logApplySkip($record, 'foreign-target', $index, ['targetKey' => $target->targetKey]);
-            return false;
-        }
-
-        if (!$element->hasField($target->fieldName)) {
-            $this->logApplySkip(
-                $record,
-                'missing-target-field',
-                $index,
-                ['targetKey' => $target->targetKey, 'fieldName' => $target->fieldName]
-            );
-            return false;
-        }
-        $element->setField(
-            $target->fieldName,
-            $this->sanitiseSuggestedContent($element, $target->fieldName, $suggestedContent)
-        );
-        $element->write();
-        return true;
-    }
-
-    /**
-     * Applies the same server-side HTML handling as a CMS save before suggestions are persisted.
-     */
-    private function sanitiseSuggestedContent(DataObject $record, string $fieldName, string $suggestedContent): string
-    {
-        $dbField = $record->dbObject($fieldName);
-        if ($dbField instanceof DBHTMLText || $dbField instanceof DBHTMLVarchar) {
-            $htmlValue = new HTMLValue($suggestedContent);
-            HTMLEditorSanitiser::create(HTMLEditorConfig::get_active())->sanitise($htmlValue);
-            XssSanitiser::create()->sanitiseHtmlValue($htmlValue);
-            return $htmlValue->getContent();
-        }
-        return strip_tags($suggestedContent);
-    }
-
-    /**
-     * Collects the elemental area IDs that belong to the current page record.
-     */
-    private function getElementalAreaIds(DataObject $record): array
-    {
-        if (!$record->hasMethod('getElementalRelations')) {
-            return [];
-        }
-
-        $relations = $record->getElementalRelations();
-        if (!is_array($relations)) {
-            return [];
-        }
-
-        $areaIds = [];
-
-        foreach ($relations as $relation) {
-            if (!is_string($relation) || !$record->hasMethod($relation)) {
-                continue;
-            }
-
-            $area = $record->$relation();
-            if ($area && $area->exists()) {
-                $areaIds[] = (int) $area->ID;
-            }
-        }
-        return array_values(array_unique($areaIds));
-    }
-
-    /**
-     * Records why an apply payload entry was skipped for later debugging.
-     */
-    private function logApplySkip(
-        DataObject $record,
-        string $reason,
-        int|string $index,
-        array $context = []
-    ): void {
-        $this->getLogger()->warning('Refine apply skipped suggestion', array_merge([
-            'reason' => $reason,
-            'recordClass' => $record->ClassName,
-            'recordId' => $record->ID,
-            'suggestionIndex' => $index,
-        ], $context));
-    }
-
-    /**
      * Resolves the current page record from the request and checks edit access.
      */
     private function resolveRecordFromRequest(HTTPRequest $request): DataObject|HTTPResponse
@@ -922,6 +523,14 @@ class RefineController extends FormSchemaController
     }
 
     /**
+     * Returns the apply service that writes selected suggestions to draft content.
+     */
+    private function getApplyService(): RefineApplyService
+    {
+        return Injector::inst()->get(RefineApplyService::class);
+    }
+
+    /**
      * Returns the extraction service used to rebuild rewrite targets for apply.
      */
     private function getContentExtractionService(): ContentExtractionService
@@ -983,7 +592,7 @@ class RefineController extends FormSchemaController
     /**
      * Chooses the provider error message that is safe to expose to the current environment.
      */
-    private function getProviderErrorMessage(AIProviderException $exception): string
+    private function getProviderErrorMessage(ProviderException $exception): string
     {
         if ($this->shouldExposeProviderErrors()) {
             return $exception->getMessage();
@@ -1003,7 +612,7 @@ class RefineController extends FormSchemaController
     /**
      * Logs the original provider exception with record context for debugging.
      */
-    private function logProviderException(AIProviderException $exception, DataObject $record): void
+    private function logProviderException(ProviderException $exception, DataObject $record): void
     {
         $this->getLogger()->error('Refine provider request failed', [
             'exception' => $exception,
@@ -1027,13 +636,5 @@ class RefineController extends FormSchemaController
     {
         return HTTPResponse::create(json_encode($body), $code)
             ->addHeader('Content-Type', 'application/json');
-    }
-
-    /**
-     * Throws a JSON HTTP error response.
-     */
-    private function failRequest(int $statusCode, string $message): never
-    {
-        throw new HTTPResponse_Exception($this->jsonResponse(['error' => $message], $statusCode));
     }
 }

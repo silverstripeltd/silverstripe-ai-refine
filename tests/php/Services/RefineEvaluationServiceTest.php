@@ -3,12 +3,12 @@
 namespace SilverstripeLtd\AiRefine\Tests\Services;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverstripeLtd\AiCore\Provider\ProviderException;
+use SilverstripeLtd\AiCore\Testing\StubProviderFactory;
 use SilverstripeLtd\AiRefine\Models\RefineAnalysis;
-use SilverstripeLtd\AiRefine\Exceptions\AIProviderException;
 use SilverstripeLtd\AiRefine\Services\RefineEvaluationService;
 use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
-use SilverstripeLtd\AiRefine\Tests\StubProvider;
-use SilverstripeLtd\AiRefine\Tests\StubProviderFactory;
+use SilverstripeLtd\AiRefine\Tests\RefineReplies;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineFullResult;
 use SilverstripeLtd\AiRefine\ValueObjects\RefineSuggestion;
 use SilverStripe\CMS\Model\SiteTree;
@@ -28,7 +28,7 @@ class RefineEvaluationServiceTest extends SapphireTest
      */
     public function testEvaluateBackgroundMarksInsufficientContent(): void
     {
-        $provider = new StubProvider(new RefineFullResult('Excellent', 'Should not be used.', []));
+        $provider = RefineReplies::repeating(new RefineFullResult('Excellent', 'Should not be used.', []));
         $service = new RefineEvaluationService(new ContentExtractionService(), new StubProviderFactory($provider));
 
         $page = SiteTree::create([
@@ -48,7 +48,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         $this->assertNotEmpty($analysis->AnalysedAt);
         $this->assertNull($analysis->Rating);
         $this->assertNull($analysis->ReasoningSummary);
-        $this->assertSame(0, $provider->evaluationCallCount);
+        $this->assertSame(0, RefineReplies::callCount($provider));
     }
 
     /**
@@ -56,7 +56,7 @@ class RefineEvaluationServiceTest extends SapphireTest
      */
     public function testEvaluateBackgroundSkipsDraftOnlyPages(): void
     {
-        $provider = new StubProvider();
+        $provider = RefineReplies::repeating();
         $service = new RefineEvaluationService(new ContentExtractionService(), new StubProviderFactory($provider));
 
         $page = SiteTree::create([
@@ -71,7 +71,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         );
 
         $this->assertNull($analysis);
-        $this->assertSame(0, $provider->evaluationCallCount);
+        $this->assertSame(0, RefineReplies::callCount($provider));
     }
 
     /**
@@ -79,7 +79,7 @@ class RefineEvaluationServiceTest extends SapphireTest
      */
     public function testEvaluateBackgroundPersistsRatingAndReasoningFromSharedPrompt(): void
     {
-        $provider = new StubProvider(
+        $provider = RefineReplies::repeating(
             new RefineFullResult('Excellent', 'Strong alignment.', [])
         );
         $service = new RefineEvaluationService(new ContentExtractionService(), new StubProviderFactory($provider));
@@ -99,7 +99,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         $this->assertSame('Excellent', $analysis->Rating);
         $this->assertSame('Strong alignment.', $analysis->ReasoningSummary);
         $this->assertNull($analysis->GenerationNote);
-        $this->assertSame(1, $provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($provider));
     }
 
     /**
@@ -107,7 +107,7 @@ class RefineEvaluationServiceTest extends SapphireTest
      */
     public function testEvaluateDraftReturnsResolvedSuggestions(): void
     {
-        $provider = new StubProvider(new RefineFullResult('Good', 'Mostly aligned.', [
+        $provider = RefineReplies::repeating(new RefineFullResult('Good', 'Mostly aligned.', [
             new RefineSuggestion('page:title', 'page_title', '', null, '', 'Updated draft title'),
             new RefineSuggestion('page:content', 'page_content', '', null, '', '<p>Updated draft body</p>'),
         ]));
@@ -140,7 +140,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         $this->assertSame('<p>Draft body</p>', $result->suggestions[1]->sourceContent);
         $this->assertSame('<p>Draft body</p>', $result->suggestions[1]->getDiffSourceContent());
         $this->assertSame('<p>Updated draft body</p>', $result->suggestions[1]->suggestedContent);
-        $this->assertSame(1, $provider->evaluationCallCount);
+        $this->assertSame(1, RefineReplies::callCount($provider));
     }
 
     /**
@@ -175,7 +175,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         array $suggestions,
         string $expectedMessage
     ): void {
-        $provider = new StubProvider(new RefineFullResult('Good', 'Mostly aligned.', $suggestions));
+        $provider = RefineReplies::repeating(new RefineFullResult('Good', 'Mostly aligned.', $suggestions));
         $service = new RefineEvaluationService(new ContentExtractionService(), new StubProviderFactory($provider));
 
         $page = SiteTree::create([
@@ -184,7 +184,7 @@ class RefineEvaluationServiceTest extends SapphireTest
         ]);
         $page->write();
 
-        $this->expectException(AIProviderException::class);
+        $this->expectException(ProviderException::class);
         $this->expectExceptionMessage($expectedMessage);
 
         $service->evaluateDraft(

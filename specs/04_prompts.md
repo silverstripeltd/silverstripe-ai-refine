@@ -102,7 +102,7 @@ The provider parses the AI response as JSON:
 | `reasoningSummary` | Persisted to `RefineAnalysis.ReasoningSummary` in the background job and displayed in the modal |
 | `suggestions` | Discarded by the background job and displayed as structured review cards in the modal |
 
-If any required key is missing from the response, the provider throws `AIProviderException`. The parser requires every suggestion to include a non-empty `targetKey`, a valid `targetType`, and non-empty `suggestedContent`. The evaluation service then checks that every server-known rewrite target was returned exactly once and rejects missing, unexpected, or duplicate targets.
+If any required key is missing from the response, the parser throws an ai-core `ProviderException`. The parser requires every suggestion to include a non-empty `targetKey`, a valid `targetType`, and non-empty `suggestedContent`. The evaluation service then checks that every server-known rewrite target was returned exactly once and rejects missing, unexpected, or duplicate targets.
 
 ## Extension hook
 

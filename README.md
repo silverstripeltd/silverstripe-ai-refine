@@ -57,9 +57,11 @@ From the project root:
 
 All configuration is via environment variables (e.g. in your webserver env or `.env`). Restart your webserver after changing any values.
 
+Provider calls go through the shared `silverstripeltd/silverstripe-ai-core` package. Every `AI_REFINE_*` provider variable below falls back to the shared `AI_*` variable of the same name (`AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `AI_MAX_TOKENS`, `AI_REQUEST_TIMEOUT`, `AI_TEMPERATURE`, `AI_THINKING_LEVEL`), so one key in `.env` can serve every AI module on the site. The module variable always wins. The shared key and model are ignored while `AI_REFINE_PROVIDER` names a different provider than `AI_PROVIDER`.
+
 ### Provider
 
-Set the AI provider and API key. Gemini, OpenAI, and Anthropic are supported out of the box. Custom providers can be added by extending `AbstractAIProvider`.
+Set the AI provider and API key. Gemini, OpenAI, and Anthropic are supported out of the box. Custom providers can be registered in the ai-core `ProviderFactory.providers` map.
 
 ```bash
 AI_REFINE_PROVIDER=gemini              # gemini (default), openai, or anthropic
@@ -72,13 +74,15 @@ Control which model is used and how it generates responses. All optional - sensi
 
 ```bash
 AI_REFINE_MODEL=gemini-3.1-flash-lite  # Model identifier (provider-specific)
-AI_REFINE_THINKING_LEVEL=low           # Thinking effort: none, low, medium, or high
+AI_REFINE_THINKING_LEVEL=low           # Thinking effort, passed to whichever provider is active
 AI_REFINE_TEMPERATURE=0.0              # Sampling temperature (0.0–1.0)
 AI_REFINE_MAX_TOKENS=20000             # Max tokens in AI response
 AI_REFINE_REQUEST_TIMEOUT=15           # Timeout per AI request in seconds
 ```
 
-`AI_REFINE_TEMPERATURE` defaults to `0.0` on purpose. This module is primarily an auditing and compliance tool, so repeatable ratings are preferred over creative variation or reroll-style behaviour. If a project wants looser, more exploratory responses, it can still override the value explicitly.
+Default models are `gemini-3.1-flash-lite` (Gemini), `gpt-5-mini` (OpenAI) and `claude-haiku-4-5` (Anthropic). The module defaults live in `_config/config.yml` under `SilverstripeLtd\AiCore\Settings\EnvProviderSettings.modules.REFINE` and can be overridden in project YAML. The thinking level defaults to `low` for Gemini only; when `AI_REFINE_THINKING_LEVEL` is set it is sent to every provider (Anthropic `output_config.effort`, OpenAI `reasoning_effort`, Gemini `thinkingLevel`), so pick a value the active model accepts.
+
+`AI_REFINE_TEMPERATURE` defaults to `0.0` on purpose. This module is primarily an auditing and compliance tool, so repeatable ratings are preferred over creative variation or reroll-style behaviour. If a project wants looser, more exploratory responses, it can still override the value explicitly. OpenAI's GPT-5 models only accept the default temperature, so the OpenAI default stays at `1.0`.
 
 `AI_REFINE_MAX_TOKENS` defaults to a higher value because both the background job and the on-demand modal use the same rewrite-aware prompt. That costs more tokens, but it is a deliberate tradeoff because omitting rewrite changes the model's audit behaviour and makes the results weaker.
 
