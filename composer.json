@@ -21,8 +21,8 @@
     },
     "repositories": [
         {
-            "type": "vcs",
-            "url": "https://github.com/silverstripeltd/silverstripe-ai-core"
+            "type": "git",
+            "url": "https://github.com/silverstripeltd/silverstripe-ai-core.git"
         }
     ],
     "autoload": {
