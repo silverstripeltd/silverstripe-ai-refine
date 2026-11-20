@@ -8,6 +8,7 @@ use SilverstripeLtd\AiRefine\Services\ContentExtractionService;
 use SilverstripeLtd\AiRefine\Tests\RestrictedRefinePage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Model\List\PaginatedList;
@@ -132,6 +133,41 @@ class RefineReportTest extends SapphireTest
         $this->assertGreaterThanOrEqual(12, $rows->getTotalItems());
         $this->assertSame('Paged good 01', $createdRows[0]->Title);
         $this->assertSame('Paged good 12', $createdRows[11]->Title);
+    }
+
+    /**
+     * Confirms each row links to the page's edit screen through the non-deprecated API, so
+     * building the report raises no deprecation notice.
+     */
+    public function testRowsLinkToTheEditScreenWithoutDeprecationNotices(): void
+    {
+        $page = $this->createPageWithAnalysis('Hotel linked', 'Good', 'Good reasoning');
+        $notices = [];
+
+        Deprecation::enable();
+        set_error_handler(static function (int $errno, string $message) use (&$notices): bool {
+            $notices[] = $message;
+            return true;
+        }, E_USER_DEPRECATED);
+
+        try {
+            $rows = (new RefineReport())->sourceRecords(['Rating' => 'Good']);
+            Deprecation::outputNotices();
+        } finally {
+            restore_error_handler();
+            Deprecation::disable();
+        }
+
+        $row = array_values(array_filter(
+            $rows->toArray(),
+            static fn($row): bool => $row->Title === 'Hotel linked'
+        ))[0];
+
+        $this->assertSame($page->getCMSEditLink(), $row->PageEditLink);
+        $this->assertSame([], array_values(array_filter(
+            $notices,
+            static fn(string $message): bool => str_contains($message, 'RefineReport')
+        )));
     }
 
     /**

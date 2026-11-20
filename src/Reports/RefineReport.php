@@ -301,7 +301,7 @@ class RefineReport extends Report
 
             $rows[] = ArrayData::create([
                 'Title' => $this->getPageTitle($page),
-                'PageEditLink' => $page->CMSEditLink(),
+                'PageEditLink' => $page->getCMSEditLink(),
                 'Rating' => $this->getRatingLabel(
                     (string) $page->getField('RefineAnalysisRating'),
                     (string) $page->getField('RefineAnalysisAnalysedAt')
